@@ -1,0 +1,79 @@
+/* ── Modal ──────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-scrim);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 200ms ease-out;
+  padding: var(--space-4);
+}
+
+.modal {
+  background: var(--color-surface);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xl);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: scaleIn 250ms cubic-bezier(0.2, 0, 0, 1);
+  overflow: hidden;
+}
+
+.modal--sm {
+  width: 100%;
+  max-width: 400px;
+}
+.modal--md {
+  width: 100%;
+  max-width: 560px;
+}
+.modal--lg {
+  width: 100%;
+  max-width: 720px;
+}
+.modal--xl {
+  width: 100%;
+  max-width: 900px;
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  flex-shrink: 0;
+}
+
+.modal__title {
+  font-size: var(--font-xl);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+.modal__close:hover {
+  background-color: var(--color-surface-container);
+  color: var(--color-text);
+}
+
+.modal__content {
+  padding: 0 var(--space-6) var(--space-6);
+  overflow-y: auto;
+  flex: 1;
+}

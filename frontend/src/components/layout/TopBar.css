@@ -1,0 +1,105 @@
+/* ── TopBar ─────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  height: var(--topbar-height);
+  padding: 0 var(--space-6);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-outline-variant);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.topbar__menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  transition: background-color var(--transition-fast);
+}
+.topbar__menu-btn:hover {
+  background: var(--color-surface-container);
+}
+
+.topbar__title {
+  font-size: var(--font-lg);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar__center {
+  flex: 1;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.topbar__search {
+  width: 100%;
+}
+
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.topbar__status {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2);
+}
+
+.topbar__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-text-tertiary);
+  transition: background-color var(--transition-normal);
+}
+.topbar__dot--online {
+  background: var(--color-success);
+}
+
+.topbar__icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+}
+.topbar__icon-btn:hover {
+  background: var(--color-surface-container);
+  color: var(--color-text);
+}
+
+/* ── Mobile ──── */
+@media (max-width: 768px) {
+  .topbar__menu-btn {
+    display: flex;
+  }
+  .topbar__center {
+    display: none;
+  }
+}

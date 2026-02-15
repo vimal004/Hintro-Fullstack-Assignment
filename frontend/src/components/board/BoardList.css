@@ -1,0 +1,200 @@
+/* ── BoardList ──────────────────────────────────────── */
+.board-list {
+  width: 320px;
+  min-width: 320px;
+  max-height: calc(100vh - var(--topbar-height) - 120px);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface-dim);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3);
+}
+
+/* ── Header ──── */
+.board-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.board-list__title {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: default;
+}
+
+.board-list__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-container-high);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+}
+
+.board-list__title-input {
+  flex: 1;
+  padding: var(--space-1) var(--space-2);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  font-weight: var(--weight-medium);
+  background: var(--color-surface);
+  outline: none;
+  color: var(--color-text);
+}
+
+/* ── Menu ──── */
+.board-list__menu-wrapper {
+  position: relative;
+}
+
+.board-list__menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  color: var(--color-text-tertiary);
+  transition: all var(--transition-fast);
+}
+.board-list__menu-btn:hover {
+  background: var(--color-surface-container-high);
+  color: var(--color-text);
+}
+
+.board-list__dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  min-width: 160px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-1);
+  z-index: 100;
+  animation: scaleIn 150ms ease-out;
+}
+
+.board-list__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+.board-list__dropdown-item:hover {
+  background: var(--color-surface-dim);
+  color: var(--color-text);
+}
+.board-list__dropdown-item--danger:hover {
+  background: var(--color-error-container);
+  color: var(--color-error);
+}
+
+/* ── Tasks Area ──── */
+.board-list__tasks {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  min-height: 60px;
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.board-list__tasks--active {
+  background: var(--color-primary-light);
+}
+
+/* ── Add Task ──── */
+.board-list__add-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  margin-top: var(--space-2);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  color: var(--color-text-tertiary);
+  transition: all var(--transition-fast);
+  width: 100%;
+  text-align: left;
+}
+.board-list__add-btn:hover {
+  background: var(--color-surface-container-high);
+  color: var(--color-text);
+}
+
+.board-list__add-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.board-list__add-input {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1.5px solid var(--color-outline);
+  border-radius: var(--radius-md);
+  font-size: var(--font-sm);
+  background: var(--color-surface);
+  outline: none;
+  color: var(--color-text);
+  transition: border-color var(--transition-fast);
+}
+.board-list__add-input:focus {
+  border-color: var(--color-primary);
+}
+
+.board-list__add-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.board-list__add-confirm {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--font-sm);
+  font-weight: var(--weight-medium);
+  transition: background-color var(--transition-fast);
+}
+.board-list__add-confirm:hover {
+  background: var(--color-primary-hover);
+}
+
+.board-list__add-cancel {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  transition: background-color var(--transition-fast);
+}
+.board-list__add-cancel:hover {
+  background: var(--color-surface-container-high);
+}
