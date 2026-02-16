@@ -3,12 +3,14 @@ import { Droppable } from "@hello-pangea/dnd";
 import { Plus, MoreHorizontal, Trash2, Edit3 } from "lucide-react";
 import TaskCard from "./TaskCard";
 import useBoardStore from "../../store/boardStore";
+import useSocketStore from "../../store/socketStore";
 import "./BoardList.css";
 
 export default function BoardList({ list, boardId }) {
   const createTask = useBoardStore((s) => s.createTask);
   const deleteList = useBoardStore((s) => s.deleteList);
   const updateListTitle = useBoardStore((s) => s.updateListTitle);
+  const { emitEvent } = useSocketStore();
 
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
@@ -16,18 +18,35 @@ export default function BoardList({ list, boardId }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(list.title);
 
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return;
-    createTask(boardId, list.id, { title: newTaskTitle.trim() });
+    const task = await createTask(boardId, list.id, {
+      title: newTaskTitle.trim(),
+    });
     setNewTaskTitle("");
     setIsAdding(false);
+
+    if (task) {
+      emitEvent("task:created", { boardId, listId: list.id, task });
+    }
   };
 
-  const handleTitleSave = () => {
+  const handleTitleSave = async () => {
     if (editTitle.trim() && editTitle !== list.title) {
-      updateListTitle(boardId, list.id, editTitle.trim());
+      await updateListTitle(boardId, list.id, editTitle.trim());
+      emitEvent("list:updated", {
+        boardId,
+        id: list.id,
+        title: editTitle.trim(),
+      });
     }
     setIsEditing(false);
+  };
+
+  const handleDeleteList = async () => {
+    await deleteList(boardId, list.id);
+    emitEvent("list:deleted", { boardId, listId: list.id });
+    setShowMenu(false);
   };
 
   return (
@@ -74,10 +93,7 @@ export default function BoardList({ list, boardId }) {
               </button>
               <button
                 className="board-list__dropdown-item board-list__dropdown-item--danger"
-                onClick={() => {
-                  deleteList(boardId, list.id);
-                  setShowMenu(false);
-                }}
+                onClick={handleDeleteList}
               >
                 <Trash2 size={14} />
                 Delete list

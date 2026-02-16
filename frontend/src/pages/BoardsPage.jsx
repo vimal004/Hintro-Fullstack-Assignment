@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, LayoutDashboard, Clock, Users } from "lucide-react";
 import useBoardStore from "../store/boardStore";
@@ -12,19 +12,27 @@ import "./BoardsPage.css";
 export default function BoardsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
   const boards = useBoardStore((s) => s.boards);
-  const users = useBoardStore((s) => s.users);
   const searchQuery = useBoardStore((s) => s.searchQuery);
-  const getFilteredBoards = useBoardStore((s) => s.getFilteredBoards);
+  const setSearchQuery = useBoardStore((s) => s.setSearchQuery);
+  const fetchBoards = useBoardStore((s) => s.fetchBoards);
   const createBoard = useBoardStore((s) => s.createBoard);
   const currentPage = useBoardStore((s) => s.currentPage);
   const setCurrentPage = useBoardStore((s) => s.setCurrentPage);
-  const pageSize = useBoardStore((s) => s.pageSize);
+  const totalPages = useBoardStore((s) => s.totalPages);
+  const totalBoards = useBoardStore((s) => s.totalBoards);
+  const isLoading = useBoardStore((s) => s.isLoading);
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newColor, setNewColor] = useState("#1a73e8");
+
+  // Fetch boards on mount and when search changes
+  useEffect(() => {
+    fetchBoards();
+  }, [fetchBoards, searchQuery, currentPage]);
 
   useEffect(() => {
     if (searchParams.get("create") === "true") {
@@ -33,21 +41,23 @@ export default function BoardsPage() {
     }
   }, [searchParams, setSearchParams]);
 
-  const filteredBoards = getFilteredBoards();
-  const totalPages = Math.ceil(filteredBoards.length / pageSize);
-  const paginatedBoards = filteredBoards.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize,
-  );
+  // Debounced search
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(localSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localSearch, setSearchQuery]);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!newTitle.trim()) return;
-    const board = createBoard(newTitle.trim(), newDesc.trim(), newColor);
+    const board = await createBoard(newTitle.trim(), newDesc.trim(), newColor);
     setNewTitle("");
     setNewDesc("");
     setNewColor("#1a73e8");
     setShowCreateModal(false);
-    navigate(`/boards/${board.id}`);
+    if (board) navigate(`/boards/${board.id}`);
   };
 
   const boardColors = [
@@ -71,8 +81,7 @@ export default function BoardsPage() {
         <div>
           <h1 className="boards-page__title">Your Boards</h1>
           <p className="boards-page__subtitle">
-            {boards.length} board{boards.length !== 1 ? "s" : ""} in your
-            workspace
+            {totalBoards} board{totalBoards !== 1 ? "s" : ""} in your workspace
           </p>
         </div>
         <Button icon={Plus} onClick={() => setShowCreateModal(true)}>
@@ -81,14 +90,16 @@ export default function BoardsPage() {
       </div>
 
       {/* ── Board Grid ──── */}
-      {paginatedBoards.length > 0 ? (
+      {isLoading ? (
+        <div className="boards-page__loading">
+          <div className="loading-spinner" />
+          <p>Loading boards…</p>
+        </div>
+      ) : boards.length > 0 ? (
         <>
           <div className="boards-grid">
-            {paginatedBoards.map((board, i) => {
-              const memberUsers = board.members
-                .map((id) => users.find((u) => u.id === id))
-                .filter(Boolean);
-
+            {boards.map((board, i) => {
+              const memberUsers = board.members || [];
               return (
                 <div
                   key={board.id}
@@ -106,11 +117,15 @@ export default function BoardsPage() {
                     <div className="board-card__meta">
                       <div className="board-card__meta-item">
                         <Clock size={14} />
-                        <span>{formatDate(board.updatedAt)}</span>
+                        <span>
+                          {formatDate(board.updated_at || board.updatedAt)}
+                        </span>
                       </div>
                       <div className="board-card__meta-item">
                         <Users size={14} />
-                        <span>{board.members.length}</span>
+                        <span>
+                          {Array.isArray(memberUsers) ? memberUsers.length : 0}
+                        </span>
                       </div>
                     </div>
                     <div className="board-card__footer">

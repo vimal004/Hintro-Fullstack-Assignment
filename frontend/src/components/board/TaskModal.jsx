@@ -9,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import useBoardStore from "../../store/boardStore";
+import useSocketStore from "../../store/socketStore";
 import Button from "../ui/Button";
 import Avatar from "../ui/Avatar";
 import "./TaskModal.css";
@@ -20,12 +21,14 @@ export default function TaskModal() {
     closeTaskModal,
     updateTask,
     deleteTask,
-    users,
-    labels,
+    boardDetail,
+    activities,
+    fetchActivities,
     getUserById,
     getLabelById,
-    getBoardActivities,
   } = useBoardStore();
+
+  const { emitEvent } = useSocketStore();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -39,33 +42,64 @@ export default function TaskModal() {
     if (selectedTask) {
       setTitle(selectedTask.title || "");
       setDescription(selectedTask.description || "");
-      setDueDate(selectedTask.dueDate || "");
+      setDueDate(selectedTask.due_date || selectedTask.dueDate || "");
       setPriority(selectedTask.priority || "medium");
       setSelectedLabels(selectedTask.labels || []);
       setSelectedAssignees(selectedTask.assignees || []);
     }
   }, [selectedTask]);
 
+  useEffect(() => {
+    if (activeTab === "activity" && selectedTask?.boardId) {
+      fetchActivities(selectedTask.boardId);
+    }
+  }, [activeTab, selectedTask?.boardId, fetchActivities]);
+
   if (!isTaskModalOpen || !selectedTask) return null;
 
-  const taskActivities = getBoardActivities(selectedTask.boardId).filter(
-    (a) => a.taskId === selectedTask.id,
+  const members = boardDetail?.members || [];
+  const labels = boardDetail?.labels || [];
+  const taskActivities = activities.filter(
+    (a) => a.task_id === selectedTask.id,
   );
 
-  const handleSave = () => {
-    updateTask(selectedTask.boardId, selectedTask.listId, selectedTask.id, {
-      title,
-      description,
-      dueDate,
-      priority,
-      labels: selectedLabels,
-      assignees: selectedAssignees,
+  const handleSave = async () => {
+    await updateTask(
+      selectedTask.boardId,
+      selectedTask.listId,
+      selectedTask.id,
+      {
+        title,
+        description,
+        dueDate: dueDate || null,
+        priority,
+        labels: selectedLabels,
+        assignees: selectedAssignees,
+      },
+    );
+
+    emitEvent("task:updated", {
+      boardId: selectedTask.boardId,
+      listId: selectedTask.listId,
+      task: { id: selectedTask.id, title, description, priority },
     });
+
     closeTaskModal();
   };
 
-  const handleDelete = () => {
-    deleteTask(selectedTask.boardId, selectedTask.listId, selectedTask.id);
+  const handleDelete = async () => {
+    await deleteTask(
+      selectedTask.boardId,
+      selectedTask.listId,
+      selectedTask.id,
+    );
+
+    emitEvent("task:deleted", {
+      boardId: selectedTask.boardId,
+      listId: selectedTask.listId,
+      taskId: selectedTask.id,
+    });
+
     closeTaskModal();
   };
 
@@ -212,6 +246,9 @@ export default function TaskModal() {
                       {label.name}
                     </button>
                   ))}
+                  {labels.length === 0 && (
+                    <span className="task-modal__no-labels">No labels yet</span>
+                  )}
                 </div>
               </div>
 
@@ -221,7 +258,7 @@ export default function TaskModal() {
                   <Users size={14} /> Assignees
                 </label>
                 <div className="task-modal__assignees">
-                  {users.map((user) => (
+                  {members.map((user) => (
                     <button
                       key={user.id}
                       className={`task-modal__assignee ${selectedAssignees.includes(user.id) ? "task-modal__assignee--active" : ""}`}
@@ -240,7 +277,7 @@ export default function TaskModal() {
           <div className="task-modal__activity">
             {taskActivities.length > 0 ? (
               taskActivities.map((act) => {
-                const actUser = getUserById(act.userId);
+                const actUser = act.user || getUserById(act.user_id);
                 return (
                   <div key={act.id} className="task-modal__activity-item">
                     <Avatar user={actUser} size="sm" />
@@ -249,7 +286,7 @@ export default function TaskModal() {
                         <strong>{actUser?.name}</strong> {act.detail}
                       </span>
                       <span className="task-modal__activity-time">
-                        {formatTimestamp(act.timestamp)}
+                        {formatTimestamp(act.created_at)}
                       </span>
                     </div>
                   </div>

@@ -1,9 +1,9 @@
+import { useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Plus,
   LogOut,
-  Settings,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
@@ -14,9 +14,15 @@ import "./Sidebar.css";
 
 export default function Sidebar({ collapsed, onToggle }) {
   const boards = useBoardStore((s) => s.boards);
+  const fetchBoards = useBoardStore((s) => s.fetchBoards);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+
+  // Fetch boards for sidebar on mount
+  useEffect(() => {
+    fetchBoards();
+  }, [fetchBoards]);
 
   const handleLogout = () => {
     logout();

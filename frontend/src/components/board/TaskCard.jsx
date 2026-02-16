@@ -1,14 +1,13 @@
-import { useState } from "react";
 import { Draggable } from "@hello-pangea/dnd";
-import { Calendar, MessageSquare, Paperclip } from "lucide-react";
+import { Calendar } from "lucide-react";
 import useBoardStore from "../../store/boardStore";
 import Avatar from "../ui/Avatar";
 import "./TaskCard.css";
 
 export default function TaskCard({ task, index, listId, boardId }) {
   const openTaskModal = useBoardStore((s) => s.openTaskModal);
-  const getUserById = useBoardStore((s) => s.getUserById);
   const getLabelById = useBoardStore((s) => s.getLabelById);
+  const getUserById = useBoardStore((s) => s.getUserById);
 
   const assigneeUsers = (task.assignees || [])
     .map((id) => getUserById(id))
@@ -29,6 +28,8 @@ export default function TaskCard({ task, index, listId, boardId }) {
     const d = new Date(dateStr);
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
+
+  const dueDate = task.due_date || task.dueDate;
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -69,10 +70,10 @@ export default function TaskCard({ task, index, listId, boardId }) {
           {/* ── Footer ──── */}
           <div className="task-card__footer">
             <div className="task-card__meta">
-              {task.dueDate && (
+              {dueDate && (
                 <span className="task-card__due">
                   <Calendar size={12} />
-                  {formatDueDate(task.dueDate)}
+                  {formatDueDate(dueDate)}
                 </span>
               )}
               {task.priority && (

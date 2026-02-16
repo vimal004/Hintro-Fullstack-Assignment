@@ -8,8 +8,6 @@ const pool = new Pool({
 
 /**
  * Run a parameterised SQL query.
- * @param {string} text  SQL string with $1, $2 … placeholders
- * @param {any[]}  params  values for the placeholders
  */
 const query = (text, params) => pool.query(text, params);
 
@@ -28,8 +26,85 @@ const initDB = async () => {
       color      VARCHAR(10),
       created_at TIMESTAMPTZ   DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS boards (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      title       VARCHAR(200)  NOT NULL,
+      description TEXT          DEFAULT '',
+      color       VARCHAR(10)   DEFAULT '#1a73e8',
+      created_by  UUID          REFERENCES users(id) ON DELETE SET NULL,
+      created_at  TIMESTAMPTZ   DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ   DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS board_members (
+      board_id   UUID REFERENCES boards(id) ON DELETE CASCADE,
+      user_id    UUID REFERENCES users(id)  ON DELETE CASCADE,
+      role       VARCHAR(20) DEFAULT 'member',
+      joined_at  TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (board_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS lists (
+      id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      board_id   UUID REFERENCES boards(id) ON DELETE CASCADE,
+      title      VARCHAR(200)  NOT NULL,
+      position   INTEGER       NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ   DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS tasks (
+      id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      list_id     UUID REFERENCES lists(id) ON DELETE CASCADE,
+      title       VARCHAR(500)  NOT NULL,
+      description TEXT          DEFAULT '',
+      priority    VARCHAR(10)   DEFAULT 'medium',
+      due_date    DATE,
+      position    INTEGER       NOT NULL DEFAULT 0,
+      created_at  TIMESTAMPTZ   DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ   DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS task_assignees (
+      task_id  UUID REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id  UUID REFERENCES users(id) ON DELETE CASCADE,
+      PRIMARY KEY (task_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS labels (
+      id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      board_id UUID REFERENCES boards(id) ON DELETE CASCADE,
+      name     VARCHAR(50) NOT NULL,
+      color    VARCHAR(10) DEFAULT '#1a73e8'
+    );
+
+    CREATE TABLE IF NOT EXISTS task_labels (
+      task_id  UUID REFERENCES tasks(id)  ON DELETE CASCADE,
+      label_id UUID REFERENCES labels(id) ON DELETE CASCADE,
+      PRIMARY KEY (task_id, label_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS activities (
+      id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      board_id   UUID REFERENCES boards(id) ON DELETE CASCADE,
+      task_id    UUID,
+      user_id    UUID REFERENCES users(id) ON DELETE SET NULL,
+      action     VARCHAR(50)  NOT NULL,
+      detail     TEXT         NOT NULL,
+      created_at TIMESTAMPTZ  DEFAULT NOW()
+    );
+
+    -- Indexes for performance
+    CREATE INDEX IF NOT EXISTS idx_board_members_user   ON board_members(user_id);
+    CREATE INDEX IF NOT EXISTS idx_lists_board          ON lists(board_id, position);
+    CREATE INDEX IF NOT EXISTS idx_tasks_list           ON tasks(list_id, position);
+    CREATE INDEX IF NOT EXISTS idx_task_assignees_user  ON task_assignees(user_id);
+    CREATE INDEX IF NOT EXISTS idx_labels_board         ON labels(board_id);
+    CREATE INDEX IF NOT EXISTS idx_task_labels_label    ON task_labels(label_id);
+    CREATE INDEX IF NOT EXISTS idx_activities_board     ON activities(board_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_boards_created_by    ON boards(created_by);
   `);
-  console.log("✅  Database initialised – users table ready");
+  console.log("✅  Database initialised – all tables ready");
 };
 
 module.exports = { query, initDB, pool };

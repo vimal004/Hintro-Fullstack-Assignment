@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DragDropContext } from "@hello-pangea/dnd";
-import { Plus, ArrowLeft, Users, Activity } from "lucide-react";
+import { Plus, ArrowLeft, Users, Activity, Loader } from "lucide-react";
 import useBoardStore from "../store/boardStore";
 import useSocketStore from "../store/socketStore";
 import BoardList from "../components/board/BoardList";
@@ -15,32 +15,52 @@ export default function BoardDetailPage() {
   const { id: boardId } = useParams();
   const navigate = useNavigate();
 
-  const {
-    boards,
-    lists,
-    users,
-    setActiveBoard,
-    moveTask,
-    createList,
-    getBoardActivities,
-  } = useBoardStore();
-  const { joinBoard, leaveBoard } = useSocketStore();
+  const boardDetail = useBoardStore((s) => s.boardDetail);
+  const isBoardLoading = useBoardStore((s) => s.isBoardLoading);
+  const fetchBoardDetail = useBoardStore((s) => s.fetchBoardDetail);
+  const fetchActivities = useBoardStore((s) => s.fetchActivities);
+  const fetchUsers = useBoardStore((s) => s.fetchUsers);
+  const moveTask = useBoardStore((s) => s.moveTask);
+  const createList = useBoardStore((s) => s.createList);
+  const activities = useBoardStore((s) => s.activities);
+
+  const { joinBoard, leaveBoard, emitEvent } = useSocketStore();
 
   const [showAddList, setShowAddList] = useState(false);
   const [newListTitle, setNewListTitle] = useState("");
   const [showActivity, setShowActivity] = useState(false);
 
-  const board = boards.find((b) => b.id === boardId);
-  const boardLists = lists[boardId] || [];
-  const activities = getBoardActivities(boardId);
-
   useEffect(() => {
-    setActiveBoard(boardId);
+    fetchBoardDetail(boardId);
+    fetchUsers();
     joinBoard(boardId);
     return () => leaveBoard(boardId);
-  }, [boardId, setActiveBoard, joinBoard, leaveBoard]);
+  }, [boardId, fetchBoardDetail, fetchUsers, joinBoard, leaveBoard]);
 
-  if (!board) {
+  useEffect(() => {
+    if (showActivity) {
+      fetchActivities(boardId);
+    }
+  }, [showActivity, boardId, fetchActivities]);
+
+  if (isBoardLoading) {
+    return (
+      <div
+        className="board-detail"
+        style={{
+          padding: "2rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Loader size={24} className="spin" />
+        <span style={{ marginLeft: 8 }}>Loading board…</span>
+      </div>
+    );
+  }
+
+  if (!boardDetail || boardDetail.id !== boardId) {
     return (
       <div className="board-detail" style={{ padding: "2rem" }}>
         <EmptyState
@@ -54,9 +74,9 @@ export default function BoardDetailPage() {
     );
   }
 
-  const memberUsers = board.members
-    .map((id) => users.find((u) => u.id === id))
-    .filter(Boolean);
+  const board = boardDetail;
+  const boardLists = board.lists || [];
+  const memberUsers = board.members || [];
 
   const handleDragEnd = (result) => {
     const { source, destination } = result;
@@ -74,13 +94,26 @@ export default function BoardDetailPage() {
       source.index,
       destination.index,
     );
+
+    // Emit socket event for real-time sync
+    emitEvent("task:moved", {
+      boardId,
+      sourceListId: source.droppableId,
+      destListId: destination.droppableId,
+      sourceIndex: source.index,
+      destIndex: destination.index,
+    });
   };
 
-  const handleAddList = () => {
+  const handleAddList = async () => {
     if (!newListTitle.trim()) return;
-    createList(boardId, newListTitle.trim());
+    const list = await createList(boardId, newListTitle.trim());
     setNewListTitle("");
     setShowAddList(false);
+
+    if (list) {
+      emitEvent("list:created", { boardId, list });
+    }
   };
 
   const formatTime = (ts) => {
@@ -183,7 +216,7 @@ export default function BoardDetailPage() {
             <div className="board-detail__activity-list">
               {activities.length > 0 ? (
                 activities.slice(0, 20).map((act) => {
-                  const actUser = users.find((u) => u.id === act.userId);
+                  const actUser = act.user || {};
                   return (
                     <div key={act.id} className="board-detail__activity-item">
                       <div
@@ -192,7 +225,7 @@ export default function BoardDetailPage() {
                       />
                       <div className="board-detail__activity-content">
                         <p>{act.detail}</p>
-                        <span>{formatTime(act.timestamp)}</span>
+                        <span>{formatTime(act.created_at)}</span>
                       </div>
                     </div>
                   );

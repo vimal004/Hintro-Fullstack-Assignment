@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 const API_URL =
-  import.meta.env.VITE_API_URL || "https://hintro-backend.vercel.app/api/auth";
+  import.meta.env.VITE_API_URL || "https://hintro-backend.vercel.app/api";
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -14,7 +14,7 @@ const useAuthStore = create((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const res = await fetch(`${API_URL}/login`, {
+      const res = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -46,7 +46,7 @@ const useAuthStore = create((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const res = await fetch(`${API_URL}/register`, {
+      const res = await fetch(`${API_URL}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, password }),
@@ -87,8 +87,7 @@ const useAuthStore = create((set, get) => ({
     if (!token || !userStr) return;
 
     try {
-      // Validate the token by calling /me
-      const res = await fetch(`${API_URL}/me`, {
+      const res = await fetch(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -96,12 +95,11 @@ const useAuthStore = create((set, get) => ({
         const data = await res.json();
         set({ user: data.user, token, isAuthenticated: true });
       } else {
-        // Token expired or invalid — clear stored data
         localStorage.removeItem("taskflow_token");
         localStorage.removeItem("taskflow_user");
       }
     } catch {
-      // Server unreachable — fall back to cached user so the app still works offline
+      // Server unreachable — fall back to cached user
       try {
         const user = JSON.parse(userStr);
         set({ user, token, isAuthenticated: true });
