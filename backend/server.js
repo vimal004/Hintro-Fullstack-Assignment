@@ -33,4 +33,13 @@ const start = async () => {
   }
 };
 
-start();
+// Initialize DB for Vercel serverless cold starts
+initDB().catch((err) => console.error("DB init error:", err));
+
+// Only listen when running locally (not on Vercel)
+if (!process.env.VERCEL) {
+  start();
+}
+
+// Export for Vercel serverless
+module.exports = app;
