@@ -238,8 +238,8 @@ const start = async () => {
 // Initialize DB for Vercel serverless cold starts
 initDB().catch((err) => console.error("DB init error:", err));
 
-// Only listen when running locally (not on Vercel)
-if (!process.env.VERCEL) {
+// Only listen when running locally key (not on Vercel) and not in test mode
+if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
   start();
 }
 

@@ -1,0 +1,103 @@
+erDiagram
+    Users {
+        string id PK
+        string email
+        string password
+        string name
+        string avatar
+        timestamp created_at
+    }
+    Teams {
+        string id PK
+        string name
+        string description
+        string created_by FK
+        timestamp created_at
+    }
+    TeamMembers {
+        string team_id FK
+        string user_id FK
+        string role "owner, admin, member"
+        timestamp joined_at
+    }
+    Boards {
+        string id PK
+        string title
+        string description
+        string color
+        string created_by FK
+        string team_id FK
+        timestamp created_at
+    }
+    BoardMembers {
+        string board_id FK
+        string user_id FK
+        string role "owner, member"
+        timestamp joined_at
+    }
+    Lists {
+        string id PK
+        string board_id FK
+        string title
+        int position
+        timestamp created_at
+    }
+    Tasks {
+        string id PK
+        string list_id FK
+        string title
+        string description
+        string priority "high, medium, low"
+        date due_date
+        int position
+        timestamp created_at
+    }
+    TaskAssignees {
+        string task_id FK
+        string user_id FK
+    }
+    Labels {
+        string id PK
+        string board_id FK
+        string name
+        string color
+    }
+    TaskLabels {
+        string task_id FK
+        string label_id FK
+    }
+    Comments {
+        string id PK
+        string task_id FK
+        string user_id FK
+        string content
+        timestamp created_at
+    }
+    ActivityLogs {
+        string id PK
+        string board_id FK
+        string user_id FK
+        string action_type
+        string entity_type "board, list, task, comment"
+        string entity_id
+        timestamp created_at
+    }
+
+    Users ||--o{ Teams : "creates"
+    Users ||--o{ TeamMembers : "member of"
+    Teams ||--o{ TeamMembers : "has members"
+    Teams ||--o{ Boards : "owns"
+    Users ||--o{ Boards : "creates"
+    Boards ||--o{ BoardMembers : "collaborators"
+    Users ||--o{ BoardMembers : "member of"
+    Boards ||--o{ Lists : "contains"
+    Lists ||--o{ Tasks : "contains"
+    Tasks ||--o{ TaskAssignees : "assigned to"
+    Users ||--o{ TaskAssignees : "assigned"
+    Boards ||--o{ Labels : "defines"
+    Tasks ||--o{ TaskLabels : "has"
+    Labels ||--o{ TaskLabels : "applied to"
+    Tasks ||--o{ Comments : "has"
+    Users ||--o{ Comments : "writes"
+    Boards ||--o{ ActivityLogs : "logs"
+    Users ||--o{ ActivityLogs : "performed by"
