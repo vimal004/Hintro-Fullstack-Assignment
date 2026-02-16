@@ -2,15 +2,20 @@ const { query } = require("../config/db");
 
 const Board = {
   /* ── Create ──────────────────────────────── */
-  async create({ title, description, color, createdBy }) {
+  async create({ title, description, color, createdBy, teamId }) {
     const { rows } = await query(
-      `INSERT INTO boards (title, description, color, created_by)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO boards (title, description, color, created_by, team_id)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [title, description || "", color || "#1a73e8", createdBy],
+      [title, description || "", color || "#1a73e8", createdBy, teamId || null],
     );
     const board = rows[0];
-    // Auto-add creator as member (owner role)
+
+    // If personal board, add creator as member (owner)
+    // If team board, team members have access via team logic (though we might still add them as explicit members or rely on team membership)
+    // For simplicity, let's always add creator as owner for now so they don't lose access if they leave team?
+    // Or if it's a team board, ownership belongs to team?
+    // Let's stick to: creator is always an owner member.
     await query(
       `INSERT INTO board_members (board_id, user_id, role) VALUES ($1, $2, 'owner')`,
       [board.id, createdBy],
@@ -21,7 +26,13 @@ const Board = {
   /* ── Read (list for a user) ─────────────── */
   async findAllForUser(userId, { search = "", page = 1, limit = 12 } = {}) {
     const offset = (page - 1) * limit;
-    let whereClause = "WHERE bm.user_id = $1";
+    let whereClause = `
+      WHERE (
+        bm.user_id = $1
+        OR
+        b.team_id IN (SELECT team_id FROM team_members WHERE user_id = $1)
+      )
+    `;
     const params = [userId];
 
     if (search.trim()) {
@@ -32,7 +43,7 @@ const Board = {
     const countResult = await query(
       `SELECT COUNT(DISTINCT b.id) as total
        FROM boards b
-       JOIN board_members bm ON bm.board_id = b.id
+       LEFT JOIN board_members bm ON bm.board_id = b.id
        ${whereClause}`,
       params,
     );
@@ -46,7 +57,7 @@ const Board = {
                 'id', u.id, 'name', u.name, 'initials', u.initials, 'color', u.color
               )) FILTER (WHERE u.id IS NOT NULL), '[]') AS members
        FROM boards b
-       JOIN board_members bm ON bm.board_id = b.id
+       LEFT JOIN board_members bm ON bm.board_id = b.id
        LEFT JOIN board_members bm2 ON bm2.board_id = b.id
        LEFT JOIN users u ON u.id = bm2.user_id
        ${whereClause}
@@ -79,12 +90,16 @@ const Board = {
     if (!board) return null;
 
     // Members
+    // Members (include board-specific members AND team members)
     const membersResult = await query(
-      `SELECT u.id, u.name, u.email, u.avatar, u.initials, u.color, bm.role
-       FROM board_members bm
-       JOIN users u ON u.id = bm.user_id
-       WHERE bm.board_id = $1
-       ORDER BY bm.joined_at`,
+      `SELECT DISTINCT ON (u.id) u.id, u.name, u.email, u.avatar, u.initials, u.color,
+              COALESCE(bm.role, tm.role, 'member') as role
+       FROM users u
+       LEFT JOIN board_members bm ON bm.user_id = u.id AND bm.board_id = $1
+       LEFT JOIN boards b ON b.id = $1
+       LEFT JOIN team_members tm ON tm.team_id = b.team_id AND tm.user_id = u.id
+       WHERE bm.board_id = $1 OR (b.team_id IS NOT NULL AND tm.team_id = b.team_id)
+       ORDER BY u.id`,
       [boardId],
     );
     board.members = membersResult.rows;

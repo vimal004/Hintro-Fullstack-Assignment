@@ -336,3 +336,30 @@
     transform: translateX(0);
   }
 }
+
+/* ── Scrolling Content ──── */
+.sidebar__content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 16px;
+  /* Thin scrollbar for webkit */
+  scrollbar-width: thin;
+  scrollbar-color: var(--md-sys-color-outline-variant) transparent;
+}
+.sidebar__content-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar__content-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--md-sys-color-outline-variant);
+  border-radius: 4px;
+}
+
+.sidebar__team-item {
+  color: var(--md-sys-color-on-surface-variant);
+  transition: background-color 0.2s;
+}
+.sidebar__team-item:hover {
+  background-color: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+}

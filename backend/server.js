@@ -9,6 +9,7 @@ const { initDB } = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const boardRoutes = require("./routes/boardRoutes");
 const userRoutes = require("./routes/userRoutes");
+const teamRoutes = require("./routes/teamRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -40,6 +41,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/boards", boardRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/teams", teamRoutes);
 
 // ── Health check ──
 app.get("/api/health", (_req, res) =>

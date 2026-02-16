@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -6,10 +6,15 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Users,
+  UserPlus,
 } from "lucide-react";
 import useBoardStore from "../../store/boardStore";
 import useAuthStore from "../../store/authStore";
+import useTeamStore from "../../store/teamStore";
 import Avatar from "../ui/Avatar";
+import TeamModal from "../team/TeamModal";
+import InviteModal from "../team/InviteModal";
 import "./Sidebar.css";
 
 export default function Sidebar({ collapsed, onToggle }) {
@@ -17,16 +22,29 @@ export default function Sidebar({ collapsed, onToggle }) {
   const fetchBoards = useBoardStore((s) => s.fetchBoards);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const { teams, fetchMyTeams } = useTeamStore();
   const navigate = useNavigate();
 
-  // Fetch boards for sidebar on mount
+  const [showTeamModal, setShowTeamModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+
+  // Fetch boards and teams on mount
   useEffect(() => {
     fetchBoards();
-  }, [fetchBoards]);
+    fetchMyTeams();
+  }, [fetchBoards, fetchMyTeams]);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  const handleInviteClick = (e, team) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSelectedTeam(team);
+    setShowInviteModal(true);
   };
 
   return (
@@ -61,38 +79,83 @@ export default function Sidebar({ collapsed, onToggle }) {
         </NavLink>
       </nav>
 
-      {/* ── Boards List ──── */}
-      {!collapsed && (
-        <div className="sidebar__section">
-          <div className="sidebar__section-header">
-            <span className="sidebar__section-title">Your Boards</span>
-            <button
-              className="sidebar__add-btn"
-              onClick={() => navigate("/boards?create=true")}
-              aria-label="Create board"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-          <div className="sidebar__boards">
-            {boards.map((board) => (
-              <NavLink
-                key={board.id}
-                to={`/boards/${board.id}`}
-                className={({ isActive }) =>
-                  `sidebar__board ${isActive ? "sidebar__board--active" : ""}`
-                }
+      <div className="sidebar__content-scroll">
+        {/* ── Teams Section ──── */}
+        {!collapsed && (
+          <div className="sidebar__section">
+            <div className="sidebar__section-header">
+              <span className="sidebar__section-title">Teams</span>
+              <button
+                className="sidebar__add-btn"
+                onClick={() => setShowTeamModal(true)}
+                aria-label="Create team"
               >
-                <span
-                  className="sidebar__board-dot"
-                  style={{ backgroundColor: board.color }}
-                />
-                <span className="sidebar__board-title">{board.title}</span>
-              </NavLink>
-            ))}
+                <Plus size={16} />
+              </button>
+            </div>
+            <div className="sidebar__boards">
+              {teams.map((team) => (
+                <div
+                  key={team.id}
+                  className="sidebar__team-item group flex items-center justify-between px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-md cursor-pointer"
+                >
+                  <div className="flex items-center gap-2 overflow-hidden">
+                    <Users size={16} className="shrink-0" />
+                    <span className="truncate text-sm font-medium">
+                      {team.name}
+                    </span>
+                  </div>
+                  <button
+                    onClick={(e) => handleInviteClick(e, team)}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded text-gray-500 transition-opacity"
+                    title="Invite members"
+                  >
+                    <UserPlus size={14} />
+                  </button>
+                </div>
+              ))}
+              {teams.length === 0 && (
+                <div className="px-3 py-2 text-xs text-gray-400">
+                  No teams yet
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* ── Boards List ──── */}
+        {!collapsed && (
+          <div className="sidebar__section">
+            <div className="sidebar__section-header">
+              <span className="sidebar__section-title">Your Boards</span>
+              <button
+                className="sidebar__add-btn"
+                onClick={() => navigate("/boards?create=true")}
+                aria-label="Create board"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            <div className="sidebar__boards">
+              {boards.map((board) => (
+                <NavLink
+                  key={board.id}
+                  to={`/boards/${board.id}`}
+                  className={({ isActive }) =>
+                    `sidebar__board ${isActive ? "sidebar__board--active" : ""}`
+                  }
+                >
+                  <span
+                    className="sidebar__board-dot"
+                    style={{ backgroundColor: board.color }}
+                  />
+                  <span className="sidebar__board-title">{board.title}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* ── User Footer ──── */}
       <div className="sidebar__footer">
@@ -113,6 +176,23 @@ export default function Sidebar({ collapsed, onToggle }) {
           <LogOut size={18} />
         </button>
       </div>
+
+      {/* ── Modals ──── */}
+      <TeamModal
+        isOpen={showTeamModal}
+        onClose={() => setShowTeamModal(false)}
+      />
+      {selectedTeam && (
+        <InviteModal
+          isOpen={showInviteModal}
+          onClose={() => {
+            setShowInviteModal(false);
+            setSelectedTeam(null);
+          }}
+          teamId={selectedTeam.id}
+          teamName={selectedTeam.name}
+        />
+      )}
     </aside>
   );
 }

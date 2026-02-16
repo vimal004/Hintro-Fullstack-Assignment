@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Plus, LayoutDashboard, Clock, Users } from "lucide-react";
 import useBoardStore from "../store/boardStore";
+import useTeamStore from "../store/teamStore";
 import Button from "../components/ui/Button";
 import Modal from "../components/ui/Modal";
 import Input from "../components/ui/Input";
@@ -24,10 +25,13 @@ export default function BoardsPage() {
   const totalBoards = useBoardStore((s) => s.totalBoards);
   const isLoading = useBoardStore((s) => s.isLoading);
 
+  const { teams } = useTeamStore();
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newColor, setNewColor] = useState("#1a73e8");
+  const [selectedTeamId, setSelectedTeamId] = useState("");
 
   // Fetch boards on mount and when search changes
   useEffect(() => {
@@ -52,10 +56,16 @@ export default function BoardsPage() {
 
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
-    const board = await createBoard(newTitle.trim(), newDesc.trim(), newColor);
+    const board = await createBoard(
+      newTitle.trim(),
+      newDesc.trim(),
+      newColor,
+      selectedTeamId || null,
+    );
     setNewTitle("");
     setNewDesc("");
     setNewColor("#1a73e8");
+    setSelectedTeamId("");
     setShowCreateModal(false);
     if (board) navigate(`/boards/${board.id}`);
   };
@@ -188,6 +198,26 @@ export default function BoardsPage() {
             onChange={(e) => setNewDesc(e.target.value)}
             placeholder="What's this board about?"
           />
+
+          {teams.length > 0 && (
+            <div className="input-group">
+              <label className="input-group__label">Team (Optional)</label>
+              <select
+                className="input-group__input"
+                value={selectedTeamId}
+                onChange={(e) => setSelectedTeamId(e.target.value)}
+                style={{ height: "40px" }}
+              >
+                <option value="">Personal Board</option>
+                {teams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="create-board-form__colors">
             <label className="input-group__label">Color</label>
             <div className="color-picker">

@@ -20,7 +20,7 @@ exports.getBoards = async (req, res) => {
 /* ── POST /api/boards ────────────────────── */
 exports.createBoard = async (req, res) => {
   try {
-    const { title, description, color } = req.body;
+    const { title, description, color, teamId } = req.body;
     if (!title || !title.trim()) {
       return res.status(400).json({ message: "Title is required" });
     }
@@ -29,6 +29,7 @@ exports.createBoard = async (req, res) => {
       description: description || "",
       color: color || "#1a73e8",
       createdBy: req.user.id,
+      teamId: teamId || null,
     });
 
     await Activity.create({

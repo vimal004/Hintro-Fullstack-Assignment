@@ -94,6 +94,40 @@ const initDB = async () => {
       created_at TIMESTAMPTZ  DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS teams (
+      id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name          VARCHAR(100) NOT NULL,
+      created_by    UUID REFERENCES users(id) ON DELETE SET NULL,
+      created_at    TIMESTAMPTZ DEFAULT NOW(),
+      updated_at    TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS team_members (
+      team_id    UUID REFERENCES teams(id) ON DELETE CASCADE,
+      user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+      role       VARCHAR(20) DEFAULT 'member', -- 'owner', 'admin', 'member'
+      joined_at  TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (team_id, user_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS invitations (
+      id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email      VARCHAR(255) NOT NULL,
+      team_id    UUID REFERENCES teams(id) ON DELETE CASCADE,
+      invited_by UUID REFERENCES users(id) ON DELETE SET NULL,
+      status     VARCHAR(20) DEFAULT 'pending', -- 'pending', 'accepted', 'declined'
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    -- Upgrade boards table if needed (idempotent-ish)
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='boards' AND column_name='team_id') THEN
+        ALTER TABLE boards ADD COLUMN team_id UUID REFERENCES teams(id) ON DELETE SET NULL;
+        CREATE INDEX idx_boards_team ON boards(team_id);
+      END IF;
+    END $$;
+
     -- Indexes for performance
     CREATE INDEX IF NOT EXISTS idx_board_members_user   ON board_members(user_id);
     CREATE INDEX IF NOT EXISTS idx_lists_board          ON lists(board_id, position);
@@ -103,6 +137,9 @@ const initDB = async () => {
     CREATE INDEX IF NOT EXISTS idx_task_labels_label    ON task_labels(label_id);
     CREATE INDEX IF NOT EXISTS idx_activities_board     ON activities(board_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_boards_created_by    ON boards(created_by);
+
+    CREATE INDEX IF NOT EXISTS idx_team_members_user    ON team_members(user_id);
+    CREATE INDEX IF NOT EXISTS idx_invitations_email    ON invitations(email);
   `);
   console.log("✅  Database initialised – all tables ready");
 };
