@@ -1,14 +1,14 @@
-/* ── Avatar ─────────────────────────────────────────── */
+/* ── M3 Avatar ─────────────────────────────────────── */
 .avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-full);
-  color: white;
-  font-weight: var(--weight-medium);
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-primary);
+  font-weight: var(--md-sys-typescale-label-large-weight);
   flex-shrink: 0;
   overflow: hidden;
-  border: 2px solid var(--color-surface);
+  border: 2px solid var(--md-sys-color-surface-container-lowest);
 }
 
 .avatar__img {
@@ -20,11 +20,13 @@
 .avatar__initials {
   user-select: none;
   line-height: 1;
+  font-size: inherit;
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
 }
 
 .avatar--more {
-  background-color: var(--color-surface-container-high) !important;
-  color: var(--color-text-secondary);
+  background-color: var(--md-sys-color-surface-container-high) !important;
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 /* Avatar Group */

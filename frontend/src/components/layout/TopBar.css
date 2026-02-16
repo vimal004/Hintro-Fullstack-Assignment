@@ -1,4 +1,4 @@
-/* ── TopBar ─────────────────────────────────────────── */
+/* ── M3 TopBar ─────────────────────────────────────── */
 .topbar {
   display: flex;
   align-items: center;
@@ -6,8 +6,8 @@
   gap: var(--space-4);
   height: var(--topbar-height);
   padding: 0 var(--space-6);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-outline-variant);
+  background: var(--md-sys-color-surface-container-lowest);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -24,20 +24,33 @@
   display: none;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-full);
-  color: var(--color-text-secondary);
-  transition: background-color var(--transition-fast);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  position: relative;
+  overflow: hidden;
 }
-.topbar__menu-btn:hover {
-  background: var(--color-surface-container);
+.topbar__menu-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-on-surface);
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard);
+  pointer-events: none;
+}
+.topbar__menu-btn:hover::before {
+  opacity: var(--md-sys-state-hover);
 }
 
 .topbar__title {
-  font-size: var(--font-lg);
-  font-weight: var(--weight-medium);
-  color: var(--color-text);
+  font-size: var(--md-sys-typescale-title-large-size);
+  line-height: var(--md-sys-typescale-title-large-line);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  color: var(--md-sys-color-on-surface);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -69,29 +82,41 @@
 .topbar__dot {
   width: 8px;
   height: 8px;
-  border-radius: var(--radius-full);
-  background: var(--color-text-tertiary);
-  transition: background-color var(--transition-normal);
+  border-radius: var(--md-sys-shape-corner-full);
+  background: var(--md-sys-color-outline);
+  transition: background-color var(--md-sys-motion-duration-medium1)
+    var(--md-sys-motion-easing-standard);
 }
 .topbar__dot--online {
-  background: var(--color-success);
+  background: var(--md-sys-color-success);
 }
 
 .topbar__icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-full);
-  color: var(--color-text-secondary);
-  transition:
-    background-color var(--transition-fast),
-    color var(--transition-fast);
+  width: 48px;
+  height: 48px;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  position: relative;
+  overflow: hidden;
+  transition: color var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard);
 }
-.topbar__icon-btn:hover {
-  background: var(--color-surface-container);
-  color: var(--color-text);
+.topbar__icon-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-on-surface);
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard);
+  pointer-events: none;
+}
+.topbar__icon-btn:hover::before {
+  opacity: var(--md-sys-state-hover);
 }
 
 /* ── Mobile ──── */

@@ -77,11 +77,6 @@ export default function LoginPage() {
               Create one
             </Link>
           </p>
-
-          <div className="auth-page__demo">
-            <span className="auth-page__demo-label">Demo credentials</span>
-            <code>vimal@taskflow.io / demo</code>
-          </div>
         </div>
       </div>
     </div>

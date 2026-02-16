@@ -1,4 +1,4 @@
-/* ── Sidebar ────────────────────────────────────────── */
+/* ── M3 Navigation Drawer ───────────────────────────── */
 .sidebar {
   width: var(--sidebar-width);
   height: 100vh;
@@ -8,9 +8,9 @@
   z-index: 200;
   display: flex;
   flex-direction: column;
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-outline-variant);
-  transition: width var(--transition-normal);
+  background: var(--md-sys-color-surface-container-low);
+  transition: width var(--md-sys-motion-duration-medium1)
+    var(--md-sys-motion-easing-emphasized);
   overflow: hidden;
 }
 
@@ -23,7 +23,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4) var(--space-4);
+  padding: var(--space-4);
   min-height: var(--topbar-height);
   flex-shrink: 0;
 }
@@ -33,7 +33,7 @@
   align-items: center;
   gap: var(--space-3);
   text-decoration: none;
-  color: var(--color-text);
+  color: var(--md-sys-color-on-surface);
 }
 
 .sidebar__logo-icon {
@@ -42,16 +42,16 @@
   justify-content: center;
   width: 40px;
   height: 40px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary);
-  color: white;
+  border-radius: var(--md-sys-shape-corner-large);
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
   flex-shrink: 0;
 }
 
 .sidebar__logo-text {
-  font-size: var(--font-xl);
-  font-weight: var(--weight-medium);
-  color: var(--color-text);
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  color: var(--md-sys-color-on-surface);
   white-space: nowrap;
 }
 
@@ -59,17 +59,31 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  color: var(--color-text-secondary);
-  transition: background-color var(--transition-fast);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  position: relative;
+  overflow: hidden;
+  transition: background-color var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard);
 }
-.sidebar__toggle:hover {
-  background: var(--color-surface-container);
+.sidebar__toggle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-on-surface);
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard);
+  pointer-events: none;
+}
+.sidebar__toggle:hover::before {
+  opacity: var(--md-sys-state-hover);
 }
 
-/* ── Nav Links ──── */
+/* ── Navigation Links (M3 Nav Drawer items) ──── */
 .sidebar__nav {
   padding: 0 var(--space-3);
 }
@@ -78,23 +92,46 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-3);
-  border-radius: var(--radius-lg);
-  color: var(--color-text-secondary);
-  font-size: var(--font-sm);
-  font-weight: var(--weight-medium);
+  padding: 0 var(--space-4);
+  height: 56px;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  letter-spacing: var(--md-sys-typescale-label-large-tracking);
   text-decoration: none;
+  position: relative;
+  overflow: hidden;
   transition:
-    background-color var(--transition-fast),
-    color var(--transition-fast);
+    background-color var(--md-sys-motion-duration-short3)
+      var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short3)
+      var(--md-sys-motion-easing-standard);
 }
-.sidebar__link:hover {
-  background: var(--color-surface-dim);
-  color: var(--color-text);
+
+/* State layer for nav links */
+.sidebar__link::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-on-surface);
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard);
+  pointer-events: none;
 }
+.sidebar__link:hover::before {
+  opacity: var(--md-sys-state-hover);
+}
+
+/* Active indicator — M3 pill with secondary-container */
 .sidebar__link--active {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.sidebar__link--active::before {
+  background: var(--md-sys-color-on-secondary-container);
 }
 
 /* ── Section ──── */
@@ -109,30 +146,46 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-2);
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-4);
 }
 
 .sidebar__section-title {
-  font-size: var(--font-xs);
-  font-weight: var(--weight-medium);
-  color: var(--color-text-tertiary);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  letter-spacing: var(--md-sys-typescale-label-medium-tracking);
+  color: var(--md-sys-color-on-surface-variant);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .sidebar__add-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-full);
-  color: var(--color-text-tertiary);
-  transition: all var(--transition-fast);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard);
+}
+.sidebar__add-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-primary);
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard);
+  pointer-events: none;
 }
 .sidebar__add-btn:hover {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
+  color: var(--md-sys-color-primary);
+}
+.sidebar__add-btn:hover::before {
+  opacity: var(--md-sys-state-hover);
 }
 
 /* ── Board List ──── */
@@ -146,35 +199,59 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
-  font-size: var(--font-sm);
+  padding: 0 var(--space-4);
+  height: 48px;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
   text-decoration: none;
+  position: relative;
+  overflow: hidden;
   transition:
-    background-color var(--transition-fast),
-    color var(--transition-fast);
+    background-color var(--md-sys-motion-duration-short3)
+      var(--md-sys-motion-easing-standard),
+    color var(--md-sys-motion-duration-short3)
+      var(--md-sys-motion-easing-standard);
 }
-.sidebar__board:hover {
-  background: var(--color-surface-dim);
-  color: var(--color-text);
+.sidebar__board::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-on-surface);
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard);
+  pointer-events: none;
 }
+.sidebar__board:hover::before {
+  opacity: var(--md-sys-state-hover);
+}
+
 .sidebar__board--active {
-  background: var(--color-primary-light);
-  color: var(--color-primary);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.sidebar__board--active::before {
+  background: var(--md-sys-color-on-secondary-container);
 }
 
 .sidebar__board-dot {
   width: 10px;
   height: 10px;
-  border-radius: var(--radius-full);
+  border-radius: var(--md-sys-shape-corner-full);
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .sidebar__board-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Footer ──── */
@@ -183,7 +260,7 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--space-4);
-  border-top: 1px solid var(--color-outline-variant);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
   flex-shrink: 0;
 }
 
@@ -201,17 +278,17 @@
 }
 
 .sidebar__user-name {
-  font-size: var(--font-sm);
-  font-weight: var(--weight-medium);
-  color: var(--color-text);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  color: var(--md-sys-color-on-surface);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .sidebar__user-email {
-  font-size: var(--font-xs);
-  color: var(--color-text-tertiary);
+  font-size: var(--md-sys-typescale-body-small-size);
+  color: var(--md-sys-color-on-surface-variant);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -221,23 +298,39 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-full);
-  color: var(--color-text-tertiary);
-  transition: all var(--transition-fast);
+  width: 40px;
+  height: 40px;
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  position: relative;
+  overflow: hidden;
+  transition: all var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard);
   flex-shrink: 0;
 }
+.sidebar__logout::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-error);
+  opacity: 0;
+  transition: opacity var(--md-sys-motion-duration-short3)
+    var(--md-sys-motion-easing-standard);
+  pointer-events: none;
+}
 .sidebar__logout:hover {
-  background: var(--color-error-container);
-  color: var(--color-error);
+  color: var(--md-sys-color-error);
+}
+.sidebar__logout:hover::before {
+  opacity: var(--md-sys-state-hover);
 }
 
 /* ── Mobile ──── */
 @media (max-width: 768px) {
   .sidebar {
     transform: translateX(-100%);
-    box-shadow: var(--shadow-xl);
+    box-shadow: var(--md-sys-elevation-4);
   }
   .sidebar.sidebar--open {
     transform: translateX(0);
