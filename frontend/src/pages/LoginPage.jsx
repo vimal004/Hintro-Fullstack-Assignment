@@ -7,8 +7,8 @@ import Input from "../components/ui/Input";
 import "./AuthPages.css";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("vimal@taskflow.io");
-  const [password, setPassword] = useState("demo");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const { login, isLoading, error, clearError } = useAuthStore();
   const navigate = useNavigate();
 

@@ -1,5 +1,6 @@
 import { create } from "zustand";
-import { mockUsers } from "../data/mockData";
+
+const API_URL = "http://localhost:5000/api/auth";
 
 const useAuthStore = create((set, get) => ({
   user: null,
@@ -11,54 +12,65 @@ const useAuthStore = create((set, get) => ({
   login: async (email, password) => {
     set({ isLoading: true, error: null });
 
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 800));
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const user = mockUsers.find((u) => u.email === email);
-    if (user && password.length >= 4) {
-      const token = "mock-jwt-token-" + Date.now();
-      localStorage.setItem("taskflow_token", token);
-      localStorage.setItem("taskflow_user", JSON.stringify(user));
-      set({ user, token, isAuthenticated: true, isLoading: false });
+      const data = await res.json();
+
+      if (!res.ok) {
+        set({ error: data.message || "Login failed", isLoading: false });
+        return false;
+      }
+
+      localStorage.setItem("taskflow_token", data.token);
+      localStorage.setItem("taskflow_user", JSON.stringify(data.user));
+      set({
+        user: data.user,
+        token: data.token,
+        isAuthenticated: true,
+        isLoading: false,
+      });
       return true;
+    } catch (err) {
+      set({ error: "Network error. Is the server running?", isLoading: false });
+      return false;
     }
-
-    set({ error: "Invalid email or password", isLoading: false });
-    return false;
   },
 
   signup: async (name, email, password) => {
     set({ isLoading: true, error: null });
 
-    await new Promise((r) => setTimeout(r, 800));
+    try {
+      const res = await fetch(`${API_URL}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    if (mockUsers.find((u) => u.email === email)) {
-      set({ error: "Email already exists", isLoading: false });
+      const data = await res.json();
+
+      if (!res.ok) {
+        set({ error: data.message || "Signup failed", isLoading: false });
+        return false;
+      }
+
+      localStorage.setItem("taskflow_token", data.token);
+      localStorage.setItem("taskflow_user", JSON.stringify(data.user));
+      set({
+        user: data.user,
+        token: data.token,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+      return true;
+    } catch (err) {
+      set({ error: "Network error. Is the server running?", isLoading: false });
       return false;
     }
-
-    const initials = name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-
-    const colors = ["#1a73e8", "#e8710a", "#1e8e3e", "#a142f4", "#d93025"];
-    const newUser = {
-      id: "u" + Date.now(),
-      name,
-      email,
-      avatar: null,
-      initials,
-      color: colors[Math.floor(Math.random() * colors.length)],
-    };
-
-    const token = "mock-jwt-token-" + Date.now();
-    localStorage.setItem("taskflow_token", token);
-    localStorage.setItem("taskflow_user", JSON.stringify(newUser));
-    set({ user: newUser, token, isAuthenticated: true, isLoading: false });
-    return true;
   },
 
   logout: () => {
@@ -67,10 +79,28 @@ const useAuthStore = create((set, get) => ({
     set({ user: null, token: null, isAuthenticated: false });
   },
 
-  hydrate: () => {
+  hydrate: async () => {
     const token = localStorage.getItem("taskflow_token");
     const userStr = localStorage.getItem("taskflow_user");
-    if (token && userStr) {
+
+    if (!token || !userStr) return;
+
+    try {
+      // Validate the token by calling /me
+      const res = await fetch(`${API_URL}/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        set({ user: data.user, token, isAuthenticated: true });
+      } else {
+        // Token expired or invalid — clear stored data
+        localStorage.removeItem("taskflow_token");
+        localStorage.removeItem("taskflow_user");
+      }
+    } catch {
+      // Server unreachable — fall back to cached user so the app still works offline
       try {
         const user = JSON.parse(userStr);
         set({ user, token, isAuthenticated: true });
