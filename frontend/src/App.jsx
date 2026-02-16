@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import useAuthStore from "./store/authStore";
 import useSocketStore from "./store/socketStore";
 import AppLayout from "./components/layout/AppLayout";
+import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import BoardsPage from "./pages/BoardsPage";
@@ -42,6 +43,18 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Landing Page — public homepage */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/boards" replace />
+            ) : (
+              <LandingPage />
+            )
+          }
+        />
+
         {/* Auth Routes */}
         <Route
           path="/login"
@@ -70,11 +83,10 @@ export default function App() {
         >
           <Route path="/boards" element={<BoardsPage />} />
           <Route path="/boards/:id" element={<BoardDetailPage />} />
-          <Route path="/" element={<Navigate to="/boards" replace />} />
         </Route>
 
         {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
