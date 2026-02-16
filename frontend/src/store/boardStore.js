@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import api from "../utils/api";
+import useTeamStore from "./teamStore";
 
 const useBoardStore = create((set, get) => ({
   /* ── Data ─────────────────────────────────────────── */
@@ -24,11 +25,14 @@ const useBoardStore = create((set, get) => ({
   /* ── Fetch Boards (list) ──────────────────────────── */
   fetchBoards: async () => {
     const { searchQuery, currentPage, pageSize } = get();
+    const selectedTeamId = useTeamStore.getState().selectedTeamId;
     set({ isLoading: true });
     try {
-      const data = await api.get(
-        `/boards?search=${encodeURIComponent(searchQuery)}&page=${currentPage}&limit=${pageSize}`,
-      );
+      let url = `/boards?search=${encodeURIComponent(searchQuery)}&page=${currentPage}&limit=${pageSize}`;
+      if (selectedTeamId) {
+        url += `&teamId=${encodeURIComponent(selectedTeamId)}`;
+      }
+      const data = await api.get(url);
       set({
         boards: data.boards,
         totalPages: data.totalPages,
@@ -71,9 +75,14 @@ const useBoardStore = create((set, get) => ({
     set({ activeBoard: board });
   },
 
-  createBoard: async (title, description, color) => {
+  createBoard: async (title, description, color, teamId) => {
     try {
-      const board = await api.post("/boards", { title, description, color });
+      const board = await api.post("/boards", {
+        title,
+        description,
+        color,
+        teamId,
+      });
       set((state) => ({ boards: [board, ...state.boards] }));
       return board;
     } catch (err) {

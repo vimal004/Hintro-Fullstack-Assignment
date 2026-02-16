@@ -4,11 +4,12 @@ const Activity = require("../models/Activity");
 /* ── GET /api/boards ─────────────────────── */
 exports.getBoards = async (req, res) => {
   try {
-    const { search, page = 1, limit = 12 } = req.query;
+    const { search, page = 1, limit = 12, teamId } = req.query;
     const result = await Board.findAllForUser(req.user.id, {
       search,
       page: parseInt(page, 10),
       limit: parseInt(limit, 10),
+      teamId: teamId || null,
     });
     res.json(result);
   } catch (err) {

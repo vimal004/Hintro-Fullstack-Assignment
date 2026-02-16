@@ -4,6 +4,7 @@ import api from "../utils/api";
 const useTeamStore = create((set, get) => ({
   teams: [],
   currentTeam: null,
+  selectedTeamId: null, // null = all boards, "personal" = personal only, uuid = specific team
   teamMembers: [],
   isLoading: false,
 
@@ -58,6 +59,7 @@ const useTeamStore = create((set, get) => ({
   },
 
   setCurrentTeam: (team) => set({ currentTeam: team }),
+  setSelectedTeamId: (teamId) => set({ selectedTeamId: teamId }),
 }));
 
 export default useTeamStore;

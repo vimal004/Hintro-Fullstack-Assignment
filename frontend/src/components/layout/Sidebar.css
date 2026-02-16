@@ -375,6 +375,14 @@
   color: var(--md-sys-color-on-surface);
 }
 
+.sidebar__team-item--active {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+.sidebar__team-item--active .sidebar__team-invite-btn {
+  opacity: 1;
+}
+
 .sidebar__team-info {
   display: flex;
   align-items: center;

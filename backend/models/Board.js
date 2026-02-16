@@ -24,7 +24,10 @@ const Board = {
   },
 
   /* ── Read (list for a user) ─────────────── */
-  async findAllForUser(userId, { search = "", page = 1, limit = 12 } = {}) {
+  async findAllForUser(
+    userId,
+    { search = "", page = 1, limit = 12, teamId = null } = {},
+  ) {
     const offset = (page - 1) * limit;
     let whereClause = `
       WHERE (
@@ -34,6 +37,14 @@ const Board = {
       )
     `;
     const params = [userId];
+
+    // Filter by team
+    if (teamId === "personal") {
+      whereClause += ` AND b.team_id IS NULL`;
+    } else if (teamId) {
+      params.push(teamId);
+      whereClause += ` AND b.team_id = $${params.length}`;
+    }
 
     if (search.trim()) {
       params.push(`%${search}%`);

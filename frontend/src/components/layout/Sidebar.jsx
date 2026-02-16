@@ -22,7 +22,8 @@ export default function Sidebar({ collapsed, onToggle }) {
   const fetchBoards = useBoardStore((s) => s.fetchBoards);
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const { teams, fetchMyTeams } = useTeamStore();
+  const { teams, fetchMyTeams, selectedTeamId, setSelectedTeamId } =
+    useTeamStore();
   const navigate = useNavigate();
 
   const [showTeamModal, setShowTeamModal] = useState(false);
@@ -47,6 +48,17 @@ export default function Sidebar({ collapsed, onToggle }) {
     setShowInviteModal(true);
   };
 
+  const handleTeamClick = (teamId) => {
+    setSelectedTeamId(teamId);
+    navigate("/boards");
+    // fetchBoards will be triggered by the BoardsPage useEffect
+  };
+
+  const handleAllBoardsClick = () => {
+    setSelectedTeamId(null);
+    navigate("/boards");
+  };
+
   return (
     <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""}`}>
       {/* ── Logo ──── */}
@@ -68,15 +80,13 @@ export default function Sidebar({ collapsed, onToggle }) {
 
       {/* ── Navigation ──── */}
       <nav className="sidebar__nav">
-        <NavLink
-          to="/boards"
-          className={({ isActive }) =>
-            `sidebar__link ${isActive ? "sidebar__link--active" : ""}`
-          }
+        <button
+          onClick={handleAllBoardsClick}
+          className={`sidebar__link ${selectedTeamId === null ? "sidebar__link--active" : ""}`}
         >
           <LayoutDashboard size={18} />
           {!collapsed && <span>All Boards</span>}
-        </NavLink>
+        </button>
       </nav>
 
       <div className="sidebar__content-scroll">
@@ -95,7 +105,11 @@ export default function Sidebar({ collapsed, onToggle }) {
             </div>
             <div className="sidebar__boards">
               {teams.map((team) => (
-                <div key={team.id} className="sidebar__team-item">
+                <div
+                  key={team.id}
+                  className={`sidebar__team-item ${selectedTeamId === team.id ? "sidebar__team-item--active" : ""}`}
+                  onClick={() => handleTeamClick(team.id)}
+                >
                   <div className="sidebar__team-info">
                     <Users size={16} />
                     <span className="sidebar__team-name">{team.name}</span>
@@ -120,7 +134,11 @@ export default function Sidebar({ collapsed, onToggle }) {
         {!collapsed && (
           <div className="sidebar__section">
             <div className="sidebar__section-header">
-              <span className="sidebar__section-title">Your Boards</span>
+              <span className="sidebar__section-title">
+                {selectedTeamId && selectedTeamId !== "personal"
+                  ? `${teams.find((t) => t.id === selectedTeamId)?.name || "Team"} Boards`
+                  : "Your Boards"}
+              </span>
               <button
                 className="sidebar__add-btn"
                 onClick={() => navigate("/boards?create=true")}

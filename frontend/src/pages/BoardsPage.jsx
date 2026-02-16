@@ -25,18 +25,18 @@ export default function BoardsPage() {
   const totalBoards = useBoardStore((s) => s.totalBoards);
   const isLoading = useBoardStore((s) => s.isLoading);
 
-  const { teams } = useTeamStore();
+  const { teams, selectedTeamId } = useTeamStore();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newColor, setNewColor] = useState("#1a73e8");
-  const [selectedTeamId, setSelectedTeamId] = useState("");
+  const [selectedTeamIdForCreate, setSelectedTeamIdForCreate] = useState("");
 
-  // Fetch boards on mount and when search changes
+  // Fetch boards on mount and when search/page/team changes
   useEffect(() => {
     fetchBoards();
-  }, [fetchBoards, searchQuery, currentPage]);
+  }, [fetchBoards, searchQuery, currentPage, selectedTeamId]);
 
   useEffect(() => {
     if (searchParams.get("create") === "true") {
@@ -54,18 +54,27 @@ export default function BoardsPage() {
     return () => clearTimeout(timer);
   }, [localSearch, setSearchQuery]);
 
+  // Pre-select the current team when creating a board
+  useEffect(() => {
+    if (selectedTeamId && selectedTeamId !== "personal") {
+      setSelectedTeamIdForCreate(selectedTeamId);
+    } else {
+      setSelectedTeamIdForCreate("");
+    }
+  }, [selectedTeamId]);
+
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
     const board = await createBoard(
       newTitle.trim(),
       newDesc.trim(),
       newColor,
-      selectedTeamId || null,
+      selectedTeamIdForCreate || null,
     );
     setNewTitle("");
     setNewDesc("");
     setNewColor("#1a73e8");
-    setSelectedTeamId("");
+    setSelectedTeamIdForCreate("");
     setShowCreateModal(false);
     if (board) navigate(`/boards/${board.id}`);
   };
@@ -84,15 +93,24 @@ export default function BoardsPage() {
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
+  // Dynamic header based on selected team
+  const selectedTeamName = selectedTeamId
+    ? teams.find((t) => t.id === selectedTeamId)?.name || "Team"
+    : null;
+  const pageTitle = selectedTeamName
+    ? `${selectedTeamName} Boards`
+    : "Your Boards";
+  const pageSubtitle = selectedTeamName
+    ? `${totalBoards} board${totalBoards !== 1 ? "s" : ""} in ${selectedTeamName}`
+    : `${totalBoards} board${totalBoards !== 1 ? "s" : ""} in your workspace`;
+
   return (
     <div className="boards-page">
       {/* ── Header ──── */}
       <div className="boards-page__header">
         <div>
-          <h1 className="boards-page__title">Your Boards</h1>
-          <p className="boards-page__subtitle">
-            {totalBoards} board{totalBoards !== 1 ? "s" : ""} in your workspace
-          </p>
+          <h1 className="boards-page__title">{pageTitle}</h1>
+          <p className="boards-page__subtitle">{pageSubtitle}</p>
         </div>
         <Button icon={Plus} onClick={() => setShowCreateModal(true)}>
           New Board
@@ -204,8 +222,8 @@ export default function BoardsPage() {
               <label className="input-group__label">Team (Optional)</label>
               <select
                 className="input-group__input"
-                value={selectedTeamId}
-                onChange={(e) => setSelectedTeamId(e.target.value)}
+                value={selectedTeamIdForCreate}
+                onChange={(e) => setSelectedTeamIdForCreate(e.target.value)}
                 style={{ height: "40px" }}
               >
                 <option value="">Personal Board</option>
