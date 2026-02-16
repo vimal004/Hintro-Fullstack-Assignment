@@ -1,0 +1,84 @@
+.presence-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  background: var(--md-sys-color-surface-container, #f3f3f3);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant, #49454f);
+  transition: all 0.2s ease;
+}
+
+.presence-indicator--disconnected {
+  background: #fce8e6;
+  color: #c5221f;
+}
+
+.presence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.presence-dot--online {
+  background: #1e8e3e;
+}
+
+.presence-dot--offline {
+  background: #c5221f;
+}
+
+.presence-dot--pulsing {
+  animation: presence-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(30, 142, 62, 0.4);
+}
+
+@keyframes presence-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(30, 142, 62, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(30, 142, 62, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(30, 142, 62, 0);
+  }
+}
+
+.presence-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.presence-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  border: 2px solid var(--md-sys-color-surface, #fff);
+  margin-left: -6px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.presence-avatar:first-child {
+  margin-left: 0;
+}
+
+.presence-avatar--overflow {
+  background: var(--md-sys-color-outline-variant, #cac4d0);
+  color: var(--md-sys-color-on-surface, #1c1b1f);
+  font-size: 8px;
+}
+
+.presence-text {
+  white-space: nowrap;
+}

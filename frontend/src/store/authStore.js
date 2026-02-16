@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import useSocketStore from "./socketStore";
 
 const API_URL =
   import.meta.env.VITE_API_URL || "https://hintro-backend.vercel.app/api";
@@ -35,6 +36,10 @@ const useAuthStore = create((set, get) => ({
         isAuthenticated: true,
         isLoading: false,
       });
+
+      // Connect socket
+      useSocketStore.getState().connect(data.token);
+
       return true;
     } catch (err) {
       set({ error: "Network error. Is the server running?", isLoading: false });
@@ -67,6 +72,10 @@ const useAuthStore = create((set, get) => ({
         isAuthenticated: true,
         isLoading: false,
       });
+
+      // Connect socket
+      useSocketStore.getState().connect(data.token);
+
       return true;
     } catch (err) {
       set({ error: "Network error. Is the server running?", isLoading: false });
@@ -78,6 +87,9 @@ const useAuthStore = create((set, get) => ({
     localStorage.removeItem("taskflow_token");
     localStorage.removeItem("taskflow_user");
     set({ user: null, token: null, isAuthenticated: false });
+
+    // Disconnect socket
+    useSocketStore.getState().disconnect();
   },
 
   hydrate: async () => {
@@ -94,6 +106,9 @@ const useAuthStore = create((set, get) => ({
       if (res.ok) {
         const data = await res.json();
         set({ user: data.user, token, isAuthenticated: true });
+
+        // Connect socket
+        useSocketStore.getState().connect(token);
       } else {
         localStorage.removeItem("taskflow_token");
         localStorage.removeItem("taskflow_user");
@@ -103,6 +118,9 @@ const useAuthStore = create((set, get) => ({
       try {
         const user = JSON.parse(userStr);
         set({ user, token, isAuthenticated: true });
+
+        // Try connecting socket anyway (might work if server comes up)
+        useSocketStore.getState().connect(token);
       } catch {
         localStorage.removeItem("taskflow_token");
         localStorage.removeItem("taskflow_user");

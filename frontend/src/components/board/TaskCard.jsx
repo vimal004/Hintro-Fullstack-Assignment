@@ -1,5 +1,5 @@
 import { Draggable } from "@hello-pangea/dnd";
-import { Calendar } from "lucide-react";
+import { Calendar, MessageSquare } from "lucide-react";
 import useBoardStore from "../../store/boardStore";
 import Avatar from "../ui/Avatar";
 import "./TaskCard.css";
@@ -82,6 +82,16 @@ export default function TaskCard({ task, index, listId, boardId }) {
                   style={{ color: priorityColors[task.priority] }}
                 >
                   ●
+                </span>
+              )}
+              {parseInt(task.comments_count || 0) > 0 && (
+                <span className="task-card__comments">
+                  <MessageSquare
+                    size={12}
+                    fill="currentColor"
+                    fillOpacity={0.1}
+                  />
+                  {task.comments_count}
                 </span>
               )}
             </div>

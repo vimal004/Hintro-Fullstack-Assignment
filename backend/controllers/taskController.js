@@ -27,6 +27,17 @@ exports.createTask = async (req, res) => {
       detail: `Created task "${task.title}"`,
     });
 
+    // Server-side broadcast
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`board:${req.params.boardId}`).emit("task:created", {
+        boardId: req.params.boardId,
+        listId: req.params.listId,
+        task,
+        userId: req.user.id,
+      });
+    }
+
     res.status(201).json(task);
   } catch (err) {
     console.error("createTask error:", err);
@@ -59,6 +70,18 @@ exports.updateTask = async (req, res) => {
 
     // Re-fetch to get full assignees/labels
     const full = await Task.findById(task.id);
+
+    // Server-side broadcast
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`board:${req.params.boardId}`).emit("task:updated", {
+        boardId: req.params.boardId,
+        listId: task.list_id,
+        task: full,
+        userId: req.user.id,
+      });
+    }
+
     res.json(full);
   } catch (err) {
     console.error("updateTask error:", err);
@@ -70,6 +93,7 @@ exports.updateTask = async (req, res) => {
 exports.deleteTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.taskId);
+    const listId = task?.list_id;
     await Task.delete(req.params.taskId);
 
     if (task) {
@@ -79,6 +103,17 @@ exports.deleteTask = async (req, res) => {
         userId: req.user.id,
         action: "deleted",
         detail: `Deleted task "${task.title}"`,
+      });
+    }
+
+    // Server-side broadcast
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`board:${req.params.boardId}`).emit("task:deleted", {
+        boardId: req.params.boardId,
+        listId,
+        taskId: req.params.taskId,
+        userId: req.user.id,
       });
     }
 
@@ -116,6 +151,19 @@ exports.moveTask = async (req, res) => {
         userId: req.user.id,
         action: "moved",
         detail: `Moved "${moved.title}" from ${srcList.title} to ${destList.title}`,
+      });
+    }
+
+    // Server-side broadcast
+    const io = req.app.get("io");
+    if (io) {
+      io.to(`board:${req.params.boardId}`).emit("task:moved", {
+        boardId: req.params.boardId,
+        taskId: req.params.taskId,
+        sourceListId: task?.list_id,
+        destListId,
+        destPosition,
+        userId: req.user.id,
       });
     }
 

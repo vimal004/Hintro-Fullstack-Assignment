@@ -1,138 +1,123 @@
-/* ── M3 Card (Outlined / Elevated) ──────────────────── */
 .task-card {
-  background: var(--md-sys-color-surface-container-low);
-  border-radius: var(--md-sys-shape-corner-medium);
-  padding: var(--space-4);
-  cursor: pointer;
-  border: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface, #fff);
+  border: 1px solid var(--md-sys-color-outline-variant, #e7e0ec);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: grab;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
   position: relative;
-  overflow: hidden;
-  transition:
-    background-color var(--md-sys-motion-duration-short3)
-      var(--md-sys-motion-easing-standard),
-    box-shadow var(--md-sys-motion-duration-short3)
-      var(--md-sys-motion-easing-standard),
-    border-color var(--md-sys-motion-duration-short3)
-      var(--md-sys-motion-easing-standard);
 }
 
-/* M3 State Layer */
-.task-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--md-sys-color-on-surface);
-  opacity: 0;
-  transition: opacity var(--md-sys-motion-duration-short3)
-    var(--md-sys-motion-easing-standard);
-  pointer-events: none;
-  z-index: 1;
-}
-.task-card:hover::before {
-  opacity: var(--md-sys-state-hover);
-}
 .task-card:hover {
-  box-shadow: var(--md-sys-elevation-1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-color: var(--md-sys-color-primary, #6750a4);
 }
 
-/* Dragging — M3 elevated state */
 .task-card--dragging {
-  background: var(--md-sys-color-surface-container-high);
-  box-shadow: var(--md-sys-elevation-4);
-  border-color: var(--md-sys-color-primary);
-}
-.task-card--dragging::before {
-  opacity: var(--md-sys-state-dragged);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+  transform: rotate(2deg);
+  border-color: var(--md-sys-color-primary, #6750a4);
+  z-index: 100;
 }
 
-/* ── Labels (pill chips) ──── */
 .task-card__labels {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
-  margin-bottom: var(--space-3);
-  position: relative;
-  z-index: 2;
+  gap: 4px;
 }
 
 .task-card__label {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: var(--md-sys-shape-corner-full);
-  font-size: var(--md-sys-typescale-label-small-size);
-  font-weight: var(--md-sys-typescale-label-small-weight);
-  letter-spacing: var(--md-sys-typescale-label-small-tracking);
-  line-height: 1.6;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
-/* ── Title ──── */
 .task-card__title {
-  font-size: var(--md-sys-typescale-title-small-size);
-  font-weight: var(--md-sys-typescale-title-small-weight);
-  line-height: var(--md-sys-typescale-title-small-line);
-  letter-spacing: var(--md-sys-typescale-title-small-tracking);
-  color: var(--md-sys-color-on-surface);
-  margin: 0 0 var(--space-2);
-  position: relative;
-  z-index: 2;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface, #1d1b20);
+  line-height: 1.4;
 }
 
-/* ── Description ──── */
 .task-card__desc {
-  font-size: var(--md-sys-typescale-body-small-size);
-  line-height: var(--md-sys-typescale-body-small-line);
-  color: var(--md-sys-color-on-surface-variant);
-  margin: 0 0 var(--space-3);
+  margin: 0;
+  font-size: 12px;
+  color: var(--md-sys-color-outline, #79747e);
+  overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  overflow: hidden;
-  position: relative;
-  z-index: 2;
 }
 
-/* ── Footer ──── */
 .task-card__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: relative;
-  z-index: 2;
+  margin-top: 4px;
 }
 
 .task-card__meta {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: 8px;
 }
 
 .task-card__due {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: var(--md-sys-typescale-label-small-size);
-  color: var(--md-sys-color-on-surface-variant);
+  font-size: 11px;
+  color: var(
+    --md-sys-color-error,
+    #b3261e
+  ); /* using error color for visibility, ideally conditional */
+  background: #fce8e6;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .task-card__priority {
-  font-size: 10px;
+  font-size: 14px;
+  height: 14px;
   line-height: 1;
+}
+
+.task-card__comments {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.8;
 }
 
 .task-card__assignees {
   display: flex;
-  align-items: center;
+  margin-left: auto;
 }
-.task-card__assignees .avatar {
-  margin-left: -4px;
-}
-.task-card__assignees .avatar:first-child {
-  margin-left: 0;
+
+.task-card__assignees > div {
+  margin-left: -6px;
+  border: 2px solid var(--md-sys-color-surface, #fff);
 }
 
 .task-card__more {
-  font-size: var(--md-sys-typescale-label-small-size);
-  color: var(--md-sys-color-on-surface-variant);
-  margin-left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--md-sys-color-surface-container-high, #ece6f0);
+  color: var(--md-sys-color-on-surface-variant, #49454f);
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: -6px;
+  border: 2px solid var(--md-sys-color-surface, #fff);
+  font-weight: 600;
 }

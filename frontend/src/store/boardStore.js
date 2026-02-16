@@ -8,6 +8,8 @@ const useBoardStore = create((set, get) => ({
   boardDetail: null, // full board with lists, tasks, members, labels
   activities: [],
   users: [], // all platform users (for assignment)
+  favorites: [], // board IDs that are favorited
+  taskComments: {}, // taskId -> comments[]
 
   activeBoard: null,
   selectedTask: null,
@@ -69,6 +71,43 @@ const useBoardStore = create((set, get) => ({
     }
   },
 
+  /* ── Fetch Favorites ─────────────────────────────── */
+  fetchFavorites: async () => {
+    try {
+      const data = await api.get("/boards/favorites");
+      set({ favorites: data.favorites || [] });
+    } catch (err) {
+      console.error("fetchFavorites:", err);
+    }
+  },
+
+  /* ── Toggle Favorite ─────────────────────────────── */
+  toggleFavorite: async (boardId) => {
+    // Optimistic update
+    set((state) => {
+      const isFav = state.favorites.includes(boardId);
+      return {
+        favorites: isFav
+          ? state.favorites.filter((id) => id !== boardId)
+          : [...state.favorites, boardId],
+      };
+    });
+    try {
+      await api.post(`/boards/${boardId}/favorite`);
+    } catch (err) {
+      // Rollback
+      set((state) => {
+        const isFav = state.favorites.includes(boardId);
+        return {
+          favorites: isFav
+            ? state.favorites.filter((id) => id !== boardId)
+            : [...state.favorites, boardId],
+        };
+      });
+      console.error("toggleFavorite:", err);
+    }
+  },
+
   /* ── Board CRUD ───────────────────────────────────── */
   setActiveBoard: (boardId) => {
     const board = get().boards.find((b) => b.id === boardId) || null;
@@ -125,20 +164,23 @@ const useBoardStore = create((set, get) => ({
     }
   },
 
+  /* ── Duplicate Board ─────────────────────────────── */
+  duplicateBoard: async (boardId) => {
+    try {
+      const board = await api.post(`/boards/${boardId}/duplicate`);
+      set((state) => ({ boards: [board, ...state.boards] }));
+      return board;
+    } catch (err) {
+      console.error("duplicateBoard:", err);
+      return null;
+    }
+  },
+
   /* ── List CRUD ────────────────────────────────────── */
   createList: async (boardId, title) => {
     try {
       const list = await api.post(`/boards/${boardId}/lists`, { title });
-      set((state) => {
-        if (!state.boardDetail || state.boardDetail.id !== boardId)
-          return state;
-        return {
-          boardDetail: {
-            ...state.boardDetail,
-            lists: [...state.boardDetail.lists, list],
-          },
-        };
-      });
+      // Don't merge here — server broadcasts the event back to us
       return list;
     } catch (err) {
       console.error("createList:", err);
@@ -147,38 +189,51 @@ const useBoardStore = create((set, get) => ({
   },
 
   updateListTitle: async (boardId, listId, title) => {
+    // Optimistic update
+    set((state) => {
+      if (!state.boardDetail) return state;
+      return {
+        boardDetail: {
+          ...state.boardDetail,
+          lists: state.boardDetail.lists.map((l) =>
+            l.id === listId ? { ...l, title } : l,
+          ),
+        },
+      };
+    });
     try {
       await api.put(`/boards/${boardId}/lists/${listId}`, { title });
-      set((state) => {
-        if (!state.boardDetail) return state;
-        return {
-          boardDetail: {
-            ...state.boardDetail,
-            lists: state.boardDetail.lists.map((l) =>
-              l.id === listId ? { ...l, title } : l,
-            ),
-          },
-        };
-      });
     } catch (err) {
       console.error("updateListTitle:", err);
+      // Rollback
+      get().fetchBoardDetail(boardId);
     }
   },
 
   deleteList: async (boardId, listId) => {
+    // Optimistic update
+    const previousLists = get().boardDetail?.lists;
+    set((state) => {
+      if (!state.boardDetail) return state;
+      return {
+        boardDetail: {
+          ...state.boardDetail,
+          lists: state.boardDetail.lists.filter((l) => l.id !== listId),
+        },
+      };
+    });
     try {
       await api.del(`/boards/${boardId}/lists/${listId}`);
-      set((state) => {
-        if (!state.boardDetail) return state;
-        return {
-          boardDetail: {
-            ...state.boardDetail,
-            lists: state.boardDetail.lists.filter((l) => l.id !== listId),
-          },
-        };
-      });
     } catch (err) {
       console.error("deleteList:", err);
+      // Rollback
+      if (previousLists) {
+        set((state) => ({
+          boardDetail: state.boardDetail
+            ? { ...state.boardDetail, lists: previousLists }
+            : state.boardDetail,
+        }));
+      }
     }
   },
 
@@ -189,17 +244,7 @@ const useBoardStore = create((set, get) => ({
         `/boards/${boardId}/lists/${listId}/tasks`,
         taskData,
       );
-      set((state) => {
-        if (!state.boardDetail) return state;
-        return {
-          boardDetail: {
-            ...state.boardDetail,
-            lists: state.boardDetail.lists.map((l) =>
-              l.id === listId ? { ...l, tasks: [...l.tasks, task] } : l,
-            ),
-          },
-        };
-      });
+      // Server broadcasts — merge handled by socket listener
       return task;
     } catch (err) {
       console.error("createTask:", err);
@@ -208,51 +253,56 @@ const useBoardStore = create((set, get) => ({
   },
 
   updateTask: async (boardId, listId, taskId, updates) => {
+    // Optimistic update
+    set((state) => {
+      if (!state.boardDetail) return state;
+      return {
+        boardDetail: {
+          ...state.boardDetail,
+          lists: state.boardDetail.lists.map((l) =>
+            l.id === listId
+              ? {
+                  ...l,
+                  tasks: l.tasks.map((t) =>
+                    t.id === taskId ? { ...t, ...updates } : t,
+                  ),
+                }
+              : l,
+          ),
+        },
+      };
+    });
     try {
       const task = await api.put(`/boards/${boardId}/tasks/${taskId}`, updates);
-      set((state) => {
-        if (!state.boardDetail) return state;
-        return {
-          boardDetail: {
-            ...state.boardDetail,
-            lists: state.boardDetail.lists.map((l) =>
-              l.id === listId
-                ? {
-                    ...l,
-                    tasks: l.tasks.map((t) =>
-                      t.id === taskId ? { ...t, ...task } : t,
-                    ),
-                  }
-                : l,
-            ),
-          },
-        };
-      });
       return task;
     } catch (err) {
       console.error("updateTask:", err);
+      // Rollback
+      get().fetchBoardDetail(boardId);
       return null;
     }
   },
 
   deleteTask: async (boardId, listId, taskId) => {
+    // Optimistic update
+    set((state) => {
+      if (!state.boardDetail) return state;
+      return {
+        boardDetail: {
+          ...state.boardDetail,
+          lists: state.boardDetail.lists.map((l) =>
+            l.id === listId
+              ? { ...l, tasks: l.tasks.filter((t) => t.id !== taskId) }
+              : l,
+          ),
+        },
+      };
+    });
     try {
       await api.del(`/boards/${boardId}/tasks/${taskId}`);
-      set((state) => {
-        if (!state.boardDetail) return state;
-        return {
-          boardDetail: {
-            ...state.boardDetail,
-            lists: state.boardDetail.lists.map((l) =>
-              l.id === listId
-                ? { ...l, tasks: l.tasks.filter((t) => t.id !== taskId) }
-                : l,
-            ),
-          },
-        };
-      });
     } catch (err) {
       console.error("deleteTask:", err);
+      get().fetchBoardDetail(boardId);
     }
   },
 
@@ -375,10 +425,62 @@ const useBoardStore = create((set, get) => ({
     }
   },
 
+  /* ── Comments ─────────────────────────────────────── */
+  fetchComments: async (boardId, taskId) => {
+    try {
+      const data = await api.get(`/boards/${boardId}/tasks/${taskId}/comments`);
+      set((state) => ({
+        taskComments: {
+          ...state.taskComments,
+          [taskId]: data.comments || [],
+        },
+      }));
+      return data.comments;
+    } catch (err) {
+      console.error("fetchComments:", err);
+      return [];
+    }
+  },
+
+  createComment: async (boardId, taskId, text) => {
+    try {
+      const comment = await api.post(
+        `/boards/${boardId}/tasks/${taskId}/comments`,
+        { text },
+      );
+      set((state) => ({
+        taskComments: {
+          ...state.taskComments,
+          [taskId]: [...(state.taskComments[taskId] || []), comment],
+        },
+      }));
+      return comment;
+    } catch (err) {
+      console.error("createComment:", err);
+      return null;
+    }
+  },
+
+  deleteComment: async (boardId, taskId, commentId) => {
+    // Optimistic
+    set((state) => ({
+      taskComments: {
+        ...state.taskComments,
+        [taskId]: (state.taskComments[taskId] || []).filter(
+          (c) => c.id !== commentId,
+        ),
+      },
+    }));
+    try {
+      await api.del(`/boards/${boardId}/tasks/${taskId}/comments/${commentId}`);
+    } catch (err) {
+      console.error("deleteComment:", err);
+    }
+  },
+
   /* ── Search & Pagination ──────────────────────────── */
   setSearchQuery: (query) => {
     set({ searchQuery: query, currentPage: 1 });
-    // Debounced fetch is handled at component level
   },
   setCurrentPage: (page) => {
     set({ currentPage: page });
@@ -388,12 +490,10 @@ const useBoardStore = create((set, get) => ({
   /* ── Helpers ──────────────────────────────────────── */
   getUserById: (userId) => {
     const bd = get().boardDetail;
-    // Try board members first
     if (bd?.members) {
       const m = bd.members.find((u) => u.id === userId);
       if (m) return m;
     }
-    // Then platform users
     return get().users.find((u) => u.id === userId);
   },
 
@@ -409,11 +509,14 @@ const useBoardStore = create((set, get) => ({
     return get().activities.filter((a) => a.board_id === boardId);
   },
 
+  isFavorited: (boardId) => {
+    return get().favorites.includes(boardId);
+  },
+
   /* ── Real-time merge helpers (called by socketStore) ── */
   _mergeListCreated: (list) => {
     set((state) => {
       if (!state.boardDetail) return state;
-      // Avoid duplicates
       if (state.boardDetail.lists.some((l) => l.id === list.id)) return state;
       return {
         boardDetail: {
@@ -509,10 +612,93 @@ const useBoardStore = create((set, get) => ({
     if (bd) get().fetchBoardDetail(bd.id);
   },
 
+  _mergeBoardDeleted: (boardId) => {
+    set((state) => ({
+      boards: state.boards.filter((b) => b.id !== boardId),
+      boardDetail: state.boardDetail?.id === boardId ? null : state.boardDetail,
+      activeBoard: state.activeBoard?.id === boardId ? null : state.activeBoard,
+    }));
+  },
+
   _mergeActivity: (activity) => {
     set((state) => ({
       activities: [activity, ...state.activities],
     }));
+  },
+
+  _mergeCommentCreated: ({ taskId, comment }) => {
+    set((state) => {
+      // 1. Update comments map
+      const newComments = {
+        ...state.taskComments,
+        [taskId]: [...(state.taskComments[taskId] || []), comment],
+      };
+
+      // 2. Update task count in boardDetail
+      let newBoardDetail = state.boardDetail;
+      if (state.boardDetail) {
+        newBoardDetail = {
+          ...state.boardDetail,
+          lists: state.boardDetail.lists.map((list) => ({
+            ...list,
+            tasks: list.tasks.map((task) =>
+              task.id === taskId
+                ? {
+                    ...task,
+                    comments_count: (
+                      parseInt(task.comments_count || 0) + 1
+                    ).toString(),
+                  }
+                : task,
+            ),
+          })),
+        };
+      }
+
+      return {
+        taskComments: newComments,
+        boardDetail: newBoardDetail,
+      };
+    });
+  },
+
+  _mergeCommentDeleted: ({ taskId, commentId }) => {
+    set((state) => {
+      // 1. Update comments map
+      const newComments = {
+        ...state.taskComments,
+        [taskId]: (state.taskComments[taskId] || []).filter(
+          (c) => c.id !== commentId,
+        ),
+      };
+
+      // 2. Update task count in boardDetail
+      let newBoardDetail = state.boardDetail;
+      if (state.boardDetail) {
+        newBoardDetail = {
+          ...state.boardDetail,
+          lists: state.boardDetail.lists.map((list) => ({
+            ...list,
+            tasks: list.tasks.map((task) =>
+              task.id === taskId
+                ? {
+                    ...task,
+                    comments_count: Math.max(
+                      0,
+                      parseInt(task.comments_count || 0) - 1,
+                    ).toString(),
+                  }
+                : task,
+            ),
+          })),
+        };
+      }
+
+      return {
+        taskComments: newComments,
+        boardDetail: newBoardDetail,
+      };
+    });
   },
 }));
 

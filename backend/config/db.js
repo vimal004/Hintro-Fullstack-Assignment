@@ -123,13 +123,31 @@ const initDB = async () => {
     CREATE TABLE IF NOT EXISTS notifications (
       id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
-      type       VARCHAR(50)  NOT NULL,     -- 'team_invite'
+      type       VARCHAR(50)  NOT NULL,
       title      VARCHAR(255) NOT NULL,
       message    TEXT         NOT NULL,
-      data       JSONB        DEFAULT '{}', -- { teamId, teamName, invitedBy, inviterId }
+      data       JSONB        DEFAULT '{}',
       is_read    BOOLEAN      DEFAULT FALSE,
-      status     VARCHAR(20)  DEFAULT 'pending', -- 'pending', 'accepted', 'declined'
+      status     VARCHAR(20)  DEFAULT 'pending',
       created_at TIMESTAMPTZ  DEFAULT NOW()
+    );
+
+    -- ── New tables for novel features ──
+
+    CREATE TABLE IF NOT EXISTS comments (
+      id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      task_id    UUID REFERENCES tasks(id) ON DELETE CASCADE,
+      user_id    UUID REFERENCES users(id) ON DELETE SET NULL,
+      text       TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS board_favorites (
+      board_id   UUID REFERENCES boards(id) ON DELETE CASCADE,
+      user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (board_id, user_id)
     );
 
     -- Upgrade boards table if needed (idempotent-ish)
@@ -166,6 +184,8 @@ const initDB = async () => {
     CREATE INDEX IF NOT EXISTS idx_team_members_user    ON team_members(user_id);
     CREATE INDEX IF NOT EXISTS idx_invitations_email    ON invitations(email);
     CREATE INDEX IF NOT EXISTS idx_notifications_user   ON notifications(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_comments_task        ON comments(task_id, created_at ASC);
+    CREATE INDEX IF NOT EXISTS idx_board_favorites_user ON board_favorites(user_id);
   `);
   console.log("✅  Database initialised – all tables ready");
 };

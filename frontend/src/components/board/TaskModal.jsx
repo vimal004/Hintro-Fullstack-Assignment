@@ -7,11 +7,13 @@ import {
   Clock,
   AlertCircle,
   Trash2,
+  MessageSquare,
 } from "lucide-react";
 import useBoardStore from "../../store/boardStore";
 import useSocketStore from "../../store/socketStore";
 import Button from "../ui/Button";
 import Avatar from "../ui/Avatar";
+import CommentSection from "./CommentSection";
 import "./TaskModal.css";
 
 export default function TaskModal() {
@@ -25,7 +27,6 @@ export default function TaskModal() {
     activities,
     fetchActivities,
     getUserById,
-    getLabelById,
   } = useBoardStore();
 
   const { emitEvent } = useSocketStore();
@@ -141,7 +142,7 @@ export default function TaskModal() {
         {/* ── Header ──── */}
         <div className="task-modal__header">
           <div className="task-modal__tabs">
-            {["details", "activity"].map((tab) => (
+            {["details", "activity", "comments"].map((tab) => (
               <button
                 key={tab}
                 className={`task-modal__tab ${activeTab === tab ? "task-modal__tab--active" : ""}`}
@@ -156,150 +157,162 @@ export default function TaskModal() {
           </button>
         </div>
 
-        {activeTab === "details" ? (
-          <div className="task-modal__body">
-            <div className="task-modal__main">
-              {/* Title */}
-              <input
-                className="task-modal__title-input"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Task title"
-              />
-
-              {/* Description */}
-              <div className="task-modal__field">
-                <label className="task-modal__label">Description</label>
-                <textarea
-                  className="task-modal__textarea"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Add a detailed description…"
-                  rows={4}
-                />
-              </div>
-            </div>
-
-            {/* ── Sidebar Meta ──── */}
-            <div className="task-modal__sidebar">
-              {/* Due Date */}
-              <div className="task-modal__field">
-                <label className="task-modal__label">
-                  <Calendar size={14} /> Due date
-                </label>
+        <div className="task-modal__content-scroll">
+          {activeTab === "details" ? (
+            <div className="task-modal__body">
+              <div className="task-modal__main">
+                {/* Title */}
                 <input
-                  type="date"
-                  className="task-modal__date-input"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
+                  className="task-modal__title-input"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Task title"
                 />
-              </div>
 
-              {/* Priority */}
-              <div className="task-modal__field">
-                <label className="task-modal__label">
-                  <AlertCircle size={14} /> Priority
-                </label>
-                <div className="task-modal__priority-group">
-                  {priorities.map((p) => (
-                    <button
-                      key={p.id}
-                      className={`task-modal__priority-btn ${priority === p.id ? "task-modal__priority-btn--active" : ""}`}
-                      style={
-                        priority === p.id
-                          ? {
-                              backgroundColor: p.color + "18",
-                              color: p.color,
-                              borderColor: p.color,
-                            }
-                          : {}
-                      }
-                      onClick={() => setPriority(p.id)}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
+                {/* Description */}
+                <div className="task-modal__field">
+                  <label className="task-modal__label">Description</label>
+                  <textarea
+                    className="task-modal__textarea"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Add a detailed description…"
+                    rows={4}
+                  />
                 </div>
               </div>
 
-              {/* Labels */}
-              <div className="task-modal__field">
-                <label className="task-modal__label">
-                  <Tag size={14} /> Labels
-                </label>
-                <div className="task-modal__labels-grid">
-                  {labels.map((label) => (
-                    <button
-                      key={label.id}
-                      className={`task-modal__label-chip ${selectedLabels.includes(label.id) ? "task-modal__label-chip--active" : ""}`}
-                      style={
-                        selectedLabels.includes(label.id)
-                          ? {
-                              backgroundColor: label.color + "18",
-                              color: label.color,
-                              borderColor: label.color,
-                            }
-                          : {}
-                      }
-                      onClick={() => toggleLabel(label.id)}
-                    >
-                      {label.name}
-                    </button>
-                  ))}
-                  {labels.length === 0 && (
-                    <span className="task-modal__no-labels">No labels yet</span>
-                  )}
+              {/* ── Sidebar Meta ──── */}
+              <div className="task-modal__sidebar">
+                {/* Due Date */}
+                <div className="task-modal__field">
+                  <label className="task-modal__label">
+                    <Calendar size={14} /> Due date
+                  </label>
+                  <input
+                    type="date"
+                    className="task-modal__date-input"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                  />
                 </div>
-              </div>
 
-              {/* Assignees */}
-              <div className="task-modal__field">
-                <label className="task-modal__label">
-                  <Users size={14} /> Assignees
-                </label>
-                <div className="task-modal__assignees">
-                  {members.map((user) => (
-                    <button
-                      key={user.id}
-                      className={`task-modal__assignee ${selectedAssignees.includes(user.id) ? "task-modal__assignee--active" : ""}`}
-                      onClick={() => toggleAssignee(user.id)}
-                    >
-                      <Avatar user={user} size="sm" />
-                      <span>{user.name}</span>
-                    </button>
-                  ))}
+                {/* Priority */}
+                <div className="task-modal__field">
+                  <label className="task-modal__label">
+                    <AlertCircle size={14} /> Priority
+                  </label>
+                  <div className="task-modal__priority-group">
+                    {priorities.map((p) => (
+                      <button
+                        key={p.id}
+                        className={`task-modal__priority-btn ${priority === p.id ? "task-modal__priority-btn--active" : ""}`}
+                        style={
+                          priority === p.id
+                            ? {
+                                backgroundColor: p.color + "18",
+                                color: p.color,
+                                borderColor: p.color,
+                              }
+                            : {}
+                        }
+                        onClick={() => setPriority(p.id)}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Labels */}
+                <div className="task-modal__field">
+                  <label className="task-modal__label">
+                    <Tag size={14} /> Labels
+                  </label>
+                  <div className="task-modal__labels-grid">
+                    {labels.map((label) => (
+                      <button
+                        key={label.id}
+                        className={`task-modal__label-chip ${selectedLabels.includes(label.id) ? "task-modal__label-chip--active" : ""}`}
+                        style={
+                          selectedLabels.includes(label.id)
+                            ? {
+                                backgroundColor: label.color + "18",
+                                color: label.color,
+                                borderColor: label.color,
+                              }
+                            : {}
+                        }
+                        onClick={() => toggleLabel(label.id)}
+                      >
+                        {label.name}
+                      </button>
+                    ))}
+                    {labels.length === 0 && (
+                      <span className="task-modal__no-labels">
+                        No labels yet
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Assignees */}
+                <div className="task-modal__field">
+                  <label className="task-modal__label">
+                    <Users size={14} /> Assignees
+                  </label>
+                  <div className="task-modal__assignees">
+                    {members.map((user) => (
+                      <button
+                        key={user.id}
+                        className={`task-modal__assignee ${selectedAssignees.includes(user.id) ? "task-modal__assignee--active" : ""}`}
+                        onClick={() => toggleAssignee(user.id)}
+                      >
+                        <Avatar user={user} size="sm" />
+                        <span>{user.name}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ) : (
-          /* ── Activity Tab ──── */
-          <div className="task-modal__activity">
-            {taskActivities.length > 0 ? (
-              taskActivities.map((act) => {
-                const actUser = act.user || getUserById(act.user_id);
-                return (
-                  <div key={act.id} className="task-modal__activity-item">
-                    <Avatar user={actUser} size="sm" />
-                    <div className="task-modal__activity-content">
-                      <span className="task-modal__activity-text">
-                        <strong>{actUser?.name}</strong> {act.detail}
-                      </span>
-                      <span className="task-modal__activity-time">
-                        {formatTimestamp(act.created_at)}
-                      </span>
+          ) : activeTab === "comments" ? (
+            /* ── Comments Tab ──── */
+            <div className="task-modal__comments">
+              <CommentSection
+                taskId={selectedTask.id}
+                boardId={selectedTask.boardId}
+              />
+            </div>
+          ) : (
+            /* ── Activity Tab ──── */
+            <div className="task-modal__activity">
+              {taskActivities.length > 0 ? (
+                taskActivities.map((act) => {
+                  const actUser = act.user || getUserById(act.user_id);
+                  return (
+                    <div key={act.id} className="task-modal__activity-item">
+                      <Avatar user={actUser} size="sm" />
+                      <div className="task-modal__activity-content">
+                        <span className="task-modal__activity-text">
+                          <strong>{actUser?.name}</strong> {act.detail}
+                        </span>
+                        <span className="task-modal__activity-time">
+                          {formatTimestamp(act.created_at)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="task-modal__no-activity">
-                <Clock size={32} strokeWidth={1.2} />
-                <p>No activity yet</p>
-              </div>
-            )}
-          </div>
-        )}
+                  );
+                })
+              ) : (
+                <div className="task-modal__no-activity">
+                  <Clock size={32} strokeWidth={1.2} />
+                  <p>No activity yet</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* ── Footer ──── */}
         <div className="task-modal__footer">

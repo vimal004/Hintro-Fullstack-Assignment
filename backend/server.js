@@ -56,7 +56,12 @@ const io = new Server(server, {
     origin: allowedOrigins,
     credentials: true,
   },
+  pingInterval: 10000,
+  pingTimeout: 5000,
 });
+
+// Track online users per board for presence
+const boardPresence = new Map(); // boardId -> Map<socketId, { userId, email, name, color, initials }>
 
 // Socket.IO auth middleware
 io.use((socket, next) => {
@@ -79,26 +84,92 @@ io.on("connection", (socket) => {
   // Join personal room for notifications
   socket.join(`user:${socket.user.id}`);
 
-  // Join board room
+  // ── Join board room with presence ──
   socket.on("join-board", (boardId) => {
     socket.join(`board:${boardId}`);
-    // Notify others
-    socket.to(`board:${boardId}`).emit("user:joined", {
+    socket.currentBoard = boardId;
+
+    // Track presence
+    if (!boardPresence.has(boardId)) {
+      boardPresence.set(boardId, new Map());
+    }
+    const presence = boardPresence.get(boardId);
+    presence.set(socket.id, {
       userId: socket.user.id,
       email: socket.user.email,
+      name: socket.user.name || socket.user.email,
+      color: socket.user.color,
+      initials: socket.user.initials,
+      joinedAt: Date.now(),
     });
-    console.log(`  → ${socket.user.email} joined board:${boardId}`);
+
+    // Send current presence list to the joiner
+    const onlineUsers = Array.from(presence.values());
+    socket.emit("presence:list", { boardId, users: onlineUsers });
+
+    // Notify others
+    socket.to(`board:${boardId}`).emit("presence:joined", {
+      boardId,
+      user: {
+        userId: socket.user.id,
+        email: socket.user.email,
+        name: socket.user.name || socket.user.email,
+        color: socket.user.color,
+        initials: socket.user.initials,
+      },
+    });
+
+    console.log(
+      `  → ${socket.user.email} joined board:${boardId} (${presence.size} online)`,
+    );
   });
 
-  // Leave board room
+  // ── Leave board room ──
   socket.on("leave-board", (boardId) => {
     socket.leave(`board:${boardId}`);
-    socket.to(`board:${boardId}`).emit("user:left", {
+    socket.currentBoard = null;
+
+    // Clean up presence
+    const presence = boardPresence.get(boardId);
+    if (presence) {
+      presence.delete(socket.id);
+      if (presence.size === 0) {
+        boardPresence.delete(boardId);
+      }
+    }
+
+    socket.to(`board:${boardId}`).emit("presence:left", {
+      boardId,
       userId: socket.user.id,
     });
   });
 
-  // Board events — relay to room
+  // ── Typing indicators ──
+  socket.on("typing:start", (data) => {
+    if (data.boardId) {
+      socket.to(`board:${data.boardId}`).emit("typing:start", {
+        userId: socket.user.id,
+        userName: socket.user.name || socket.user.email,
+        field: data.field, // 'task:title', 'task:description', 'list:title', etc.
+        targetId: data.targetId,
+        boardId: data.boardId,
+      });
+    }
+  });
+
+  socket.on("typing:stop", (data) => {
+    if (data.boardId) {
+      socket.to(`board:${data.boardId}`).emit("typing:stop", {
+        userId: socket.user.id,
+        field: data.field,
+        targetId: data.targetId,
+        boardId: data.boardId,
+      });
+    }
+  });
+
+  // ── Board events — relay to room ──
+  // These are used as FALLBACK only; primary broadcasting is done by controllers via io
   const boardEvents = [
     "board:updated",
     "list:created",
@@ -115,6 +186,9 @@ io.on("connection", (socket) => {
     "label:created",
     "label:updated",
     "label:deleted",
+    "comment:created",
+    "board:favorited",
+    "board:unfavorited",
   ];
 
   for (const event of boardEvents) {
@@ -126,12 +200,26 @@ io.on("connection", (socket) => {
     });
   }
 
+  // ── Disconnect ──
   socket.on("disconnect", () => {
+    // Clean up presence from all boards
+    for (const [boardId, presence] of boardPresence.entries()) {
+      if (presence.has(socket.id)) {
+        presence.delete(socket.id);
+        io.to(`board:${boardId}`).emit("presence:left", {
+          boardId,
+          userId: socket.user.id,
+        });
+        if (presence.size === 0) {
+          boardPresence.delete(boardId);
+        }
+      }
+    }
     console.log(`🔌 Socket disconnected: ${socket.user.email}`);
   });
 });
 
-// Make io accessible to controllers if needed
+// Make io accessible to controllers for server-side broadcasting
 app.set("io", io);
 
 // ── Start ──

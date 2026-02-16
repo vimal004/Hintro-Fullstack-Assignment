@@ -1,7 +1,15 @@
-import { useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DragDropContext } from "@hello-pangea/dnd";
-import { Plus, ArrowLeft, Users, Activity, Loader } from "lucide-react";
+import {
+  Plus,
+  ArrowLeft,
+  Users,
+  Activity,
+  Loader,
+  Star,
+  Copy,
+} from "lucide-react";
 import useBoardStore from "../store/boardStore";
 import useSocketStore from "../store/socketStore";
 import BoardList from "../components/board/BoardList";
@@ -9,6 +17,7 @@ import TaskModal from "../components/board/TaskModal";
 import Button from "../components/ui/Button";
 import { AvatarGroup } from "../components/ui/Avatar";
 import EmptyState from "../components/ui/EmptyState";
+import PresenceIndicator from "../components/ui/PresenceIndicator";
 import "./BoardDetailPage.css";
 
 export default function BoardDetailPage() {
@@ -22,6 +31,9 @@ export default function BoardDetailPage() {
   const fetchUsers = useBoardStore((s) => s.fetchUsers);
   const moveTask = useBoardStore((s) => s.moveTask);
   const createList = useBoardStore((s) => s.createList);
+  const toggleFavorite = useBoardStore((s) => s.toggleFavorite);
+  const duplicateBoard = useBoardStore((s) => s.duplicateBoard);
+  const isFavorited = useBoardStore((s) => s.isFavorited(boardId));
   const activities = useBoardStore((s) => s.activities);
 
   const { joinBoard, leaveBoard, emitEvent } = useSocketStore();
@@ -94,25 +106,19 @@ export default function BoardDetailPage() {
       source.index,
       destination.index,
     );
-
-    // Emit socket event for real-time sync
-    emitEvent("task:moved", {
-      boardId,
-      sourceListId: source.droppableId,
-      destListId: destination.droppableId,
-      sourceIndex: source.index,
-      destIndex: destination.index,
-    });
   };
 
   const handleAddList = async () => {
     if (!newListTitle.trim()) return;
-    const list = await createList(boardId, newListTitle.trim());
+    await createList(boardId, newListTitle.trim());
     setNewListTitle("");
     setShowAddList(false);
+  };
 
-    if (list) {
-      emitEvent("list:created", { boardId, list });
+  const handleDuplicate = async () => {
+    if (window.confirm("Make a copy of this board?")) {
+      const newBoard = await duplicateBoard(boardId);
+      if (newBoard) navigate(`/boards/${newBoard.id}`);
     }
   };
 
@@ -138,12 +144,34 @@ export default function BoardDetailPage() {
             <ArrowLeft size={18} />
           </button>
           <div>
-            <h1 className="board-detail__title">{board.title}</h1>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <h1 className="board-detail__title">{board.title}</h1>
+              <button
+                className={`board-detail__star ${isFavorited ? "board-detail__star--active" : ""}`}
+                onClick={() => toggleFavorite(boardId)}
+                title={isFavorited ? "Unstar board" : "Star board"}
+              >
+                <Star
+                  size={18}
+                  fill={isFavorited ? "#f9ab00" : "none"}
+                  stroke={isFavorited ? "#f9ab00" : "currentColor"}
+                />
+              </button>
+            </div>
             <p className="board-detail__desc">{board.description}</p>
           </div>
         </div>
         <div className="board-detail__header-right">
+          <PresenceIndicator /> {/* Real-time presence */}
+          <div className="board-detail__divider" />
           <AvatarGroup users={memberUsers} max={4} size="sm" />
+          <Button
+            variant="ghost"
+            icon={Copy}
+            size="sm"
+            onClick={handleDuplicate}
+            title="Duplicate Board"
+          />
           <Button
             variant={showActivity ? "secondary" : "ghost"}
             icon={Activity}
