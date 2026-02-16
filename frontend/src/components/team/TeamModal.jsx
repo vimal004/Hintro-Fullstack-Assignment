@@ -1,43 +1,72 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import useTeamStore from "../../store/teamStore";
 import Modal from "../ui/Modal";
 import Input from "../ui/Input";
 import Button from "../ui/Button";
+import { Users } from "lucide-react";
+import "./TeamModal.css";
 
 const TeamModal = ({ isOpen, onClose }) => {
   const [name, setName] = useState("");
   const { createTeam } = useTeamStore();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setName("");
+      setError(null);
+      setLoading(false);
+    }
+  }, [isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     setLoading(true);
-    const team = await createTeam(name);
-    setLoading(false);
+    setError(null);
 
-    if (team) {
-      setName("");
-      onClose();
+    try {
+      const team = await createTeam(name.trim());
+      setLoading(false);
+
+      if (team) {
+        setName("");
+        onClose();
+      } else {
+        setError("Failed to create team. Please try again.");
+      }
+    } catch (err) {
+      setLoading(false);
+      setError("An unexpected error occurred.");
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create Team">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <Modal isOpen={isOpen} onClose={onClose} title="Create Team" size="sm">
+      <form onSubmit={handleSubmit} className="team-modal__form">
         <Input
           label="Team Name"
           placeholder="e.g. Design Team"
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
+          icon={Users}
+          autoFocus
         />
-        <div className="flex justify-end gap-2 mt-2">
+
+        {error && (
+          <div className="team-modal__error">
+            <span>{error}</span>
+          </div>
+        )}
+
+        <div className="team-modal__actions">
           <Button variant="ghost" onClick={onClose} type="button">
             Cancel
           </Button>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" loading={loading} variant="primary">
             {loading ? "Creating..." : "Create Team"}
           </Button>
         </div>

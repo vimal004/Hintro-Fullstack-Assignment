@@ -116,7 +116,20 @@ const initDB = async () => {
       team_id    UUID REFERENCES teams(id) ON DELETE CASCADE,
       invited_by UUID REFERENCES users(id) ON DELETE SET NULL,
       status     VARCHAR(20) DEFAULT 'pending', -- 'pending', 'accepted', 'declined'
-      created_at TIMESTAMPTZ DEFAULT NOW()
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(email, team_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS notifications (
+      id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id    UUID REFERENCES users(id) ON DELETE CASCADE,
+      type       VARCHAR(50)  NOT NULL,     -- 'team_invite'
+      title      VARCHAR(255) NOT NULL,
+      message    TEXT         NOT NULL,
+      data       JSONB        DEFAULT '{}', -- { teamId, teamName, invitedBy, inviterId }
+      is_read    BOOLEAN      DEFAULT FALSE,
+      status     VARCHAR(20)  DEFAULT 'pending', -- 'pending', 'accepted', 'declined'
+      created_at TIMESTAMPTZ  DEFAULT NOW()
     );
 
     -- Upgrade boards table if needed (idempotent-ish)
@@ -126,6 +139,18 @@ const initDB = async () => {
         ALTER TABLE boards ADD COLUMN team_id UUID REFERENCES teams(id) ON DELETE SET NULL;
         CREATE INDEX idx_boards_team ON boards(team_id);
       END IF;
+    END $$;
+
+    -- Upgrade invitations table: add unique constraint (idempotent)
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'invitations_email_team_id_key'
+      ) THEN
+        ALTER TABLE invitations ADD CONSTRAINT invitations_email_team_id_key UNIQUE (email, team_id);
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      NULL; -- ignore if it already exists or table doesn't exist yet
     END $$;
 
     -- Indexes for performance
@@ -140,6 +165,7 @@ const initDB = async () => {
 
     CREATE INDEX IF NOT EXISTS idx_team_members_user    ON team_members(user_id);
     CREATE INDEX IF NOT EXISTS idx_invitations_email    ON invitations(email);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user   ON notifications(user_id, created_at DESC);
   `);
   console.log("✅  Database initialised – all tables ready");
 };

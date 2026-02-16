@@ -72,6 +72,14 @@ const useSocketStore = create((set, get) => ({
       store.getState()._mergeActivity(data.activity);
     });
 
+    // ── Notification events ──
+    socket.on("notification:new", (data) => {
+      // Dynamically import to avoid circular deps
+      import("./notificationStore").then((mod) => {
+        mod.default.getState().addNotification(data.notification);
+      });
+    });
+
     set({ socket });
   },
 

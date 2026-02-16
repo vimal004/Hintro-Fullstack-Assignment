@@ -1,6 +1,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const { query } = require("../config/db");
 
 const SALT_ROUNDS = 10;
 const AVATAR_COLORS = ["#1a73e8", "#e8710a", "#1e8e3e", "#a142f4", "#d93025"];
@@ -66,6 +67,46 @@ exports.register = async (req, res) => {
     });
 
     const token = signToken(user);
+
+    // ── Process Pending Invitations ──
+    try {
+      const pendingInvites = await query(
+        `SELECT * FROM invitations WHERE email = $1 AND status = 'pending'`,
+        [email.toLowerCase()],
+      );
+
+      if (pendingInvites.rows.length > 0) {
+        console.log(
+          `Processing ${pendingInvites.rows.length} pending invites for ${email}`,
+        );
+
+        for (const invite of pendingInvites.rows) {
+          // Check if already a member (idempotency)
+          const memberCheck = await query(
+            `SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2`,
+            [invite.team_id, user.id],
+          );
+
+          if (memberCheck.rows.length === 0) {
+            // Add to team
+            await query(
+              `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'member')`,
+              [invite.team_id, user.id],
+            );
+          }
+
+          // Update invitation status
+          await query(
+            `UPDATE invitations SET status = 'accepted' WHERE id = $1`,
+            [invite.id],
+          );
+        }
+      }
+    } catch (inviteErr) {
+      console.error("Error processing pending invites:", inviteErr);
+      // Don't fail the registration if invite processing fails
+    }
+
     return res.status(201).json({ token, user });
   } catch (err) {
     console.error("Register error:", err);

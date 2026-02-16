@@ -10,6 +10,5 @@ router.post("/", TeamController.createTeam);
 router.get("/", TeamController.getMyTeams);
 router.get("/:teamId/members", TeamController.getTeamMembers);
 router.post("/:teamId/invite", TeamController.inviteMember);
-router.post("/invite-app", TeamController.sendAppInvite);
 
 module.exports = router;

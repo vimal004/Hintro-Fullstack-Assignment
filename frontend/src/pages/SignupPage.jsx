@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Mail, Lock, User, LayoutDashboard } from "lucide-react";
 import useAuthStore from "../store/authStore";
 import Button from "../components/ui/Button";
@@ -7,13 +7,23 @@ import Input from "../components/ui/Input";
 import "./AuthPages.css";
 
 export default function SignupPage() {
+  const [searchParams] = useSearchParams();
+  const inviteEmail = searchParams.get("email") || "";
+
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(inviteEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [localError, setLocalError] = useState("");
   const { signup, isLoading, error, clearError } = useAuthStore();
   const navigate = useNavigate();
+
+  // If email comes in from invite link, pre-fill it
+  useEffect(() => {
+    if (inviteEmail) {
+      setEmail(inviteEmail);
+    }
+  }, [inviteEmail]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,6 +61,17 @@ export default function SignupPage() {
               Start collaborating with your team
             </p>
           </div>
+
+          {/* ── Invite Banner ──── */}
+          {inviteEmail && (
+            <div className="auth-page__invite-banner">
+              <Mail size={16} />
+              <span>
+                You've been invited to join a team! Create your account to get
+                started.
+              </span>
+            </div>
+          )}
 
           {/* ── Form ──── */}
           <form className="auth-page__form" onSubmit={handleSubmit}>

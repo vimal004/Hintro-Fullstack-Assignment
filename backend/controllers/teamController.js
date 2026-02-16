@@ -1,15 +1,4 @@
 const { query } = require("../config/db");
-const nodemailer = require("nodemailer");
-
-// Simple in-memory or env-based transporter for now
-// In production, use real credentials
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 const TeamController = {
   /* ── Create Team ────────────────────────── */
@@ -94,13 +83,23 @@ const TeamController = {
     }
   },
 
-  /* ── Invite Member ──────────────────────── */
+  /* ── Invite Member (sends in-app notification) ── */
   async inviteMember(req, res) {
     const { teamId } = req.params;
-    const { email } = req.body;
+    const { email: rawEmail } = req.body;
     const userId = req.user.id;
 
-    if (!email) return res.status(400).json({ message: "Email is required" });
+    if (!rawEmail)
+      return res.status(400).json({ message: "Email is required" });
+    const email = rawEmail.trim().toLowerCase();
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res
+        .status(400)
+        .json({ message: "Please enter a valid email address" });
+    }
 
     try {
       // 1. Check permissions (must be member of team)
@@ -112,88 +111,105 @@ const TeamController = {
         return res.status(403).json({ message: "Access denied" });
       }
 
-      // 2. Check if user exists
-      const userResult = await query(`SELECT * FROM users WHERE email = $1`, [
-        email,
-      ]);
+      // 2. Check if user exists (case-insensitive)
+      const userResult = await query(
+        `SELECT id, name, email FROM users WHERE LOWER(email) = $1`,
+        [email],
+      );
       const userToInvite = userResult.rows[0];
 
       if (!userToInvite) {
-        // User does not exist -> Create invitation record & Send App Invite
-        /*
-        We return 404 with a specific code so frontend can prompt:
-        "User not found. Send invitation to join app?"
-        */
         return res.status(404).json({
-          message: "User not found",
+          message:
+            "No user found with this email. Only registered users can be invited.",
           code: "USER_NOT_FOUND",
-          email,
         });
       }
 
-      // 3. Check if already member
+      // 3. Can't invite yourself
+      if (userToInvite.id === userId) {
+        return res.status(400).json({ message: "You can't invite yourself" });
+      }
+
+      // 4. Check if already member
       const existingMember = await query(
         `SELECT 1 FROM team_members WHERE team_id = $1 AND user_id = $2`,
         [teamId, userToInvite.id],
       );
       if (existingMember.rows.length > 0) {
-        return res.status(400).json({ message: "User is already a member" });
+        return res
+          .status(400)
+          .json({ message: "This user is already a member of the team" });
       }
 
-      // 4. Add member directly (simplifying flow: auto-add if user exists)
-      // Alternatively, we could create an invitation entry.
-      // For this task, "add team members thru mailids" -> implies direct addition or invite.
-      // Let's do direct add for simplicity if they exist, or maybe invitation if we want to be strict.
-      // The prompt says "send invite/ add team members".
-      // Let's add them directly to `team_members` for instant collaboration if they exist.
+      // 5. Check if there's already a pending invite notification
+      const existingNotif = await query(
+        `SELECT id FROM notifications
+         WHERE user_id = $1 AND type = 'team_invite' AND status = 'pending'
+           AND data->>'teamId' = $2`,
+        [userToInvite.id, teamId],
+      );
+      if (existingNotif.rows.length > 0) {
+        return res
+          .status(400)
+          .json({ message: "An invitation is already pending for this user" });
+      }
 
-      await query(
-        `INSERT INTO team_members (team_id, user_id, role) VALUES ($1, $2, 'member')`,
-        [teamId, userToInvite.id],
+      // 6. Get team name and inviter name
+      const teamInfo = await query(`SELECT name FROM teams WHERE id = $1`, [
+        teamId,
+      ]);
+      const teamName = teamInfo.rows[0]?.name || "a team";
+
+      const inviterInfo = await query(`SELECT name FROM users WHERE id = $1`, [
+        userId,
+      ]);
+      const inviterName = inviterInfo.rows[0]?.name || "Someone";
+
+      // 7. Create notification for the invited user
+      const notifResult = await query(
+        `INSERT INTO notifications (user_id, type, title, message, data)
+         VALUES ($1, 'team_invite', $2, $3, $4)
+         RETURNING *`,
+        [
+          userToInvite.id,
+          "Team Invitation",
+          `${inviterName} invited you to join "${teamName}"`,
+          JSON.stringify({
+            teamId,
+            teamName,
+            invitedBy: inviterName,
+            inviterId: userId,
+          }),
+        ],
       );
 
-      // Notify via socket if online? (handled elsewhere usually)
+      // 8. Record in invitations table too
+      const existingInvite = await query(
+        `SELECT id FROM invitations WHERE email = $1 AND team_id = $2 AND status = 'pending'`,
+        [email, teamId],
+      );
+      if (existingInvite.rows.length === 0) {
+        await query(
+          `INSERT INTO invitations (email, team_id, invited_by, status) VALUES ($1, $2, $3, 'pending')`,
+          [email, teamId, userId],
+        );
+      }
 
-      res.json({ message: "Member added successfully", member: userToInvite });
+      // 9. Send real-time notification via Socket.IO
+      const io = req.app.get("io");
+      if (io) {
+        io.to(`user:${userToInvite.id}`).emit("notification:new", {
+          notification: notifResult.rows[0],
+        });
+      }
+
+      res.json({
+        message: `Invitation sent to ${userToInvite.name}. They'll see it in their notifications.`,
+      });
     } catch (err) {
       console.error("inviteMember error:", err);
-      res.status(500).json({ message: "Server error" });
-    }
-  },
-
-  /* ── Send App Invite ────────────────────── */
-  async sendAppInvite(req, res) {
-    const { email, teamId } = req.body;
-    const userId = req.user.id;
-
-    // In a real app, this would send an email with a link like https://app.com/signup?ref=teamId
-    // For now, we simulate sending email.
-
-    console.log(
-      `📧 Sending App Invite to ${email} from user ${userId} for team ${teamId}`,
-    );
-
-    // If we had valid credentials
-    /*
-    await transporter.sendMail({
-      from: '"TaskFlow" <noreply@taskflow.com>',
-      to: email,
-      subject: "You've been invited to join TaskFlow",
-      text: "Join us at ..."
-    });
-    */
-
-    // We still record the invitation in DB
-    try {
-      await query(
-        `INSERT INTO invitations (email, team_id, invited_by) VALUES ($1, $2, $3) RETURNING *`,
-        [email, teamId, userId],
-      );
-
-      res.json({ message: `Invitation sent to ${email}` });
-    } catch (err) {
-      console.error("sendAppInvite error:", err);
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({ message: "Server error. Please try again." });
     }
   },
 };

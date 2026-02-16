@@ -1,0 +1,27 @@
+/* ═══════════════════════════════════════════════════════
+   M3  Team Modal Styles
+   ═══════════════════════════════════════════════════════ */
+
+.team-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 4px;
+}
+
+.team-modal__error {
+  padding: 10px 14px;
+  background-color: var(--md-sys-color-error-container, #f9dedc);
+  color: var(--md-sys-color-on-error-container, #410e0b);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.team-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}

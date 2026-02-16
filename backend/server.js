@@ -10,6 +10,7 @@ const authRoutes = require("./routes/authRoutes");
 const boardRoutes = require("./routes/boardRoutes");
 const userRoutes = require("./routes/userRoutes");
 const teamRoutes = require("./routes/teamRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
 const server = http.createServer(app);
@@ -42,6 +43,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/boards", boardRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/teams", teamRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // ── Health check ──
 app.get("/api/health", (_req, res) =>
@@ -73,6 +75,9 @@ io.use((socket, next) => {
 // Socket.IO connection handling
 io.on("connection", (socket) => {
   console.log(`🔌 Socket connected: ${socket.user.email} (${socket.id})`);
+
+  // Join personal room for notifications
+  socket.join(`user:${socket.user.id}`);
 
   // Join board room
   socket.on("join-board", (boardId) => {

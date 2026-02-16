@@ -1,6 +1,7 @@
-import { Bell, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import SearchBar from "../ui/SearchBar";
 import Avatar from "../ui/Avatar";
+import NotificationPanel from "../notifications/NotificationPanel";
 import useAuthStore from "../../store/authStore";
 import useBoardStore from "../../store/boardStore";
 import useSocketStore from "../../store/socketStore";
@@ -43,9 +44,7 @@ export default function TopBar({ onMenuClick, title }) {
             className={`topbar__dot ${isConnected ? "topbar__dot--online" : ""}`}
           />
         </div>
-        <button className="topbar__icon-btn" aria-label="Notifications">
-          <Bell size={20} />
-        </button>
+        <NotificationPanel />
         <Avatar user={user} size="sm" />
       </div>
     </header>

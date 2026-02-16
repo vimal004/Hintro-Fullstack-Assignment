@@ -42,27 +42,18 @@ const useTeamStore = create((set, get) => ({
   inviteMember: async (teamId, email) => {
     try {
       const res = await api.post(`/teams/${teamId}/invite`, { email });
-      // If successful member add
-      if (res.member) {
-        set((state) => ({
-          teamMembers: [...state.teamMembers, res.member],
-        }));
-        return { success: true, message: res.message };
-      }
       return { success: true, message: res.message };
     } catch (err) {
-      // Return error to component to handle "User not found"
-      return { success: false, error: err };
-    }
-  },
-
-  sendAppInvite: async (teamId, email) => {
-    try {
-      await api.post("/teams/invite-app", { teamId, email });
-      return true;
-    } catch (err) {
-      console.error("sendAppInvite:", err);
-      return false;
+      console.error("inviteMember error:", err);
+      return {
+        success: false,
+        error: {
+          message: err.message || "Failed to invite member",
+          data: err.data || {},
+          status: err.status,
+          code: err.data?.code,
+        },
+      };
     }
   },
 
