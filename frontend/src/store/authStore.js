@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
-const API_URL = "http://localhost:5000/api/auth";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://hintro-backend.vercel.app/api/auth";
 
 const useAuthStore = create((set, get) => ({
   user: null,
