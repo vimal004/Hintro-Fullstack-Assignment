@@ -1,6 +1,6 @@
 # Hintro: Advanced Real-Time Task Collaboration Platform
 
-A high-performance, real-time Kanban board application built with the MERN stack (MongoDB/PostgreSQL variant, Express, React, Node.js) and Socket.IO. Designed with Google's Material Design 3 principles for a premium, responsive user experience.
+A high-performance, real-time Kanban board application built with the PERN stack (PostgreSQL, Express, React, Node.js) and Socket.IO. Designed with Google's Material Design 3 principles for a premium, responsive user experience.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Status](https://img.shields.io/badge/status-active-success.svg)

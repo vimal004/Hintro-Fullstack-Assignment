@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Plus, LayoutDashboard, Clock, Users } from "lucide-react";
+import {
+  Plus,
+  LayoutDashboard,
+  Clock,
+  Users,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import useBoardStore from "../store/boardStore";
 import useTeamStore from "../store/teamStore";
 import Button from "../components/ui/Button";
@@ -168,15 +175,25 @@ export default function BoardsPage() {
           {/* ── Pagination ──── */}
           {totalPages > 1 && (
             <div className="boards-page__pagination">
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i}
-                  className={`pagination__btn ${currentPage === i + 1 ? "pagination__btn--active" : ""}`}
-                  onClick={() => setCurrentPage(i + 1)}
-                >
-                  {i + 1}
-                </button>
-              ))}
+              <button
+                className="pagination__btn"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(currentPage - 1)}
+                title="Previous Page"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <span className="pagination__info">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                className="pagination__btn"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(currentPage + 1)}
+                title="Next Page"
+              >
+                <ChevronRight size={20} />
+              </button>
             </div>
           )}
         </>
