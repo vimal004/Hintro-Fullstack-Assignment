@@ -11,7 +11,6 @@ export default function BoardList({ list, boardId }) {
   const deleteList = useBoardStore((s) => s.deleteList);
   const updateListTitle = useBoardStore((s) => s.updateListTitle);
   const { emitEvent } = useSocketStore();
-  const addToast = useSocketStore((s) => s._addToast);
 
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
@@ -29,7 +28,6 @@ export default function BoardList({ list, boardId }) {
 
     if (task) {
       emitEvent("task:created", { boardId, listId: list.id, task });
-      if (addToast) addToast("Task added 🚀");
     }
   };
 
@@ -156,12 +154,7 @@ export default function BoardList({ list, boardId }) {
       ) : (
         <button
           className="board-list__add-btn"
-          onClick={(e) => {
-            import("../../utils/confetti").then(({ triggerSmallConfetti }) => {
-              triggerSmallConfetti(e.clientX, e.clientY);
-            });
-            setIsAdding(true);
-          }}
+          onClick={() => setIsAdding(true)}
         >
           <Plus size={16} />
           Add a task

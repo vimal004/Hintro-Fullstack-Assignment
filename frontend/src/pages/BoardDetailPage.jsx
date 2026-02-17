@@ -90,9 +90,6 @@ export default function BoardDetailPage() {
   const boardLists = board.lists || [];
   const memberUsers = board.members || [];
 
-  const addToast = useSocketStore((s) => s._addToast);
-  const [lastConfetti, setLastConfetti] = useState(0);
-
   const handleDragEnd = (result) => {
     const { source, destination } = result;
     if (!destination) return;
@@ -101,29 +98,6 @@ export default function BoardDetailPage() {
       source.index === destination.index
     )
       return;
-
-    // Check for "Done" list (completion)
-    const destList = boardLists.find((l) => l.id === destination.droppableId);
-    if (destList) {
-      const title = destList.title.toLowerCase();
-      const isDone =
-        title === "done" ||
-        title === "completed" ||
-        title === "finished" ||
-        title.includes("complete");
-
-      if (isDone) {
-        // Debounce confetti slightly to avoid spam
-        const now = Date.now();
-        if (now - lastConfetti > 1000) {
-          import("../utils/confetti").then(({ triggerFireworks }) => {
-            triggerFireworks();
-          });
-          if (addToast) addToast("Task completed! 🎉");
-          setLastConfetti(now);
-        }
-      }
-    }
 
     moveTask(
       boardId,
