@@ -274,6 +274,28 @@ const useBoardStore = create((set, get) => ({
     });
     try {
       const task = await api.put(`/boards/${boardId}/tasks/${taskId}`, updates);
+      // Wait for socket to confirm, or double-check state
+      // But typically we should just return the task
+      // If we rely on socket for source of truth, we might not need to do anything here
+      // However, if the server returns the updated task, we should merge it to be safe
+      set((state) => {
+        if (!state.boardDetail) return state;
+        return {
+          boardDetail: {
+            ...state.boardDetail,
+            lists: state.boardDetail.lists.map((l) =>
+              l.id === listId
+                ? {
+                    ...l,
+                    tasks: l.tasks.map((t) =>
+                      t.id === taskId ? { ...t, ...task } : t,
+                    ),
+                  }
+                : l,
+            ),
+          },
+        };
+      });
       return task;
     } catch (err) {
       console.error("updateTask:", err);

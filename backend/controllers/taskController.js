@@ -48,8 +48,15 @@ exports.createTask = async (req, res) => {
 /* ── PUT /api/boards/:boardId/tasks/:taskId ────────── */
 exports.updateTask = async (req, res) => {
   try {
-    const { title, description, priority, dueDate, assignees, labels } =
-      req.body;
+    const {
+      title,
+      description,
+      priority,
+      dueDate,
+      assignees,
+      labels,
+      isCompleted,
+    } = req.body;
     const task = await Task.update(req.params.taskId, {
       title,
       description,
@@ -57,6 +64,7 @@ exports.updateTask = async (req, res) => {
       dueDate,
       assignees,
       labels,
+      isCompleted,
     });
     if (!task) return res.status(404).json({ message: "Task not found" });
 
