@@ -1,13 +1,15 @@
 import { Draggable } from "@hello-pangea/dnd";
-import { Calendar, MessageSquare } from "lucide-react";
+import { Calendar, MessageSquare, Check } from "lucide-react";
 import useBoardStore from "../../store/boardStore";
 import Avatar from "../ui/Avatar";
+import confetti from "../../utils/confetti";
 import "./TaskCard.css";
 
 export default function TaskCard({ task, index, listId, boardId }) {
   const openTaskModal = useBoardStore((s) => s.openTaskModal);
   const getLabelById = useBoardStore((s) => s.getLabelById);
   const getUserById = useBoardStore((s) => s.getUserById);
+  const updateTask = useBoardStore((s) => s.updateTask);
 
   const assigneeUsers = (task.assignees || [])
     .map((id) => getUserById(id))
@@ -29,7 +31,28 @@ export default function TaskCard({ task, index, listId, boardId }) {
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
+  const handleToggleComplete = async (e) => {
+    e.stopPropagation(); // prevent opening modal
+    const currentStatus =
+      task.is_completed !== undefined ? task.is_completed : !!task.isCompleted;
+    const newStatus = !currentStatus;
+
+    // Optimistic UI update is handled by store, but we can trigger confetti immediately
+    if (newStatus) {
+      confetti(e.clientX, e.clientY);
+    }
+
+    // We send isCompleted (camelCase) to match backend body expectation
+    // and standard JS naming, store optimistic update will use this
+    await updateTask(boardId, listId, task.id, {
+      isCompleted: newStatus,
+      is_completed: newStatus,
+    });
+  };
+
   const dueDate = task.due_date || task.dueDate;
+  const isCompleted =
+    task.is_completed !== undefined ? task.is_completed : !!task.isCompleted;
 
   return (
     <Draggable draggableId={task.id} index={index}>
@@ -38,7 +61,7 @@ export default function TaskCard({ task, index, listId, boardId }) {
           ref={provided.innerRef}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
-          className={`task-card ${snapshot.isDragging ? "task-card--dragging" : ""}`}
+          className={`task-card ${snapshot.isDragging ? "task-card--dragging" : ""} ${isCompleted ? "task-card--completed" : ""}`}
           onClick={() => openTaskModal({ ...task, listId, boardId })}
         >
           {/* ── Labels ──── */}
@@ -59,8 +82,21 @@ export default function TaskCard({ task, index, listId, boardId }) {
             </div>
           )}
 
-          {/* ── Title ──── */}
-          <h4 className="task-card__title">{task.title}</h4>
+          {/* ── Title Row with Checkbox ──── */}
+          <div className="task-card__header">
+            <button
+              className={`task-card__checkbox ${isCompleted ? "task-card__checkbox--checked" : ""}`}
+              onClick={handleToggleComplete}
+              title={isCompleted ? "Mark as incomplete" : "Mark as complete"}
+            >
+              {isCompleted && <Check size={12} strokeWidth={3} />}
+            </button>
+            <h4
+              className={`task-card__title ${isCompleted ? "task-card__title--completed" : ""}`}
+            >
+              {task.title}
+            </h4>
+          </div>
 
           {/* ── Description preview ──── */}
           {task.description && (
@@ -71,7 +107,9 @@ export default function TaskCard({ task, index, listId, boardId }) {
           <div className="task-card__footer">
             <div className="task-card__meta">
               {dueDate && (
-                <span className="task-card__due">
+                <span
+                  className={`task-card__due ${isCompleted ? "task-card__due--completed" : ""}`}
+                >
                   <Calendar size={12} />
                   {formatDueDate(dueDate)}
                 </span>

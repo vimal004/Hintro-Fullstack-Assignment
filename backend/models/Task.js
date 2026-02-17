@@ -55,7 +55,7 @@ const Task = {
   /* ── Read ───────────────────────────────── */
   async findById(taskId) {
     const { rows } = await query(
-      `SELECT t.*,
+      `SELECT t.*, t.is_completed,
               COALESCE((SELECT json_agg(ta.user_id) FROM task_assignees ta WHERE ta.task_id = t.id), '[]') AS assignees,
               COALESCE((SELECT json_agg(tl.label_id) FROM task_labels tl WHERE tl.task_id = t.id), '[]') AS labels
        FROM tasks t WHERE t.id = $1`,
@@ -67,7 +67,7 @@ const Task = {
   /* ── Update ─────────────────────────────── */
   async update(
     taskId,
-    { title, description, priority, dueDate, assignees, labels },
+    { title, description, priority, dueDate, assignees, labels, isCompleted },
   ) {
     const { rows } = await query(
       `UPDATE tasks SET
@@ -75,9 +75,10 @@ const Task = {
          description = COALESCE($3, description),
          priority = COALESCE($4, priority),
          due_date = $5,
+         is_completed = COALESCE($6, is_completed),
          updated_at = NOW()
        WHERE id = $1 RETURNING *`,
-      [taskId, title, description, priority, dueDate],
+      [taskId, title, description, priority, dueDate, isCompleted],
     );
     const task = rows[0];
     if (!task) return null;

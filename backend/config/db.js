@@ -171,6 +171,14 @@ const initDB = async () => {
       NULL; -- ignore if it already exists or table doesn't exist yet
     END $$;
 
+    -- Upgrade tasks table: add is_completed column
+    DO $$
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='tasks' AND column_name='is_completed') THEN
+            ALTER TABLE tasks ADD COLUMN is_completed BOOLEAN DEFAULT FALSE;
+        END IF;
+    END $$;
+
     -- Indexes for performance
     CREATE INDEX IF NOT EXISTS idx_board_members_user   ON board_members(user_id);
     CREATE INDEX IF NOT EXISTS idx_lists_board          ON lists(board_id, position);

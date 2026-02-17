@@ -35,6 +35,7 @@ export default function TaskModal() {
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("medium");
+  const [isCompleted, setIsCompleted] = useState(false);
   const [selectedLabels, setSelectedLabels] = useState([]);
   const [selectedAssignees, setSelectedAssignees] = useState([]);
   const [activeTab, setActiveTab] = useState("details");
@@ -45,6 +46,11 @@ export default function TaskModal() {
       setDescription(selectedTask.description || "");
       setDueDate(selectedTask.due_date || selectedTask.dueDate || "");
       setPriority(selectedTask.priority || "medium");
+      setIsCompleted(
+        selectedTask.is_completed !== undefined
+          ? selectedTask.is_completed
+          : !!selectedTask.isCompleted,
+      );
       setSelectedLabels(selectedTask.labels || []);
       setSelectedAssignees(selectedTask.assignees || []);
     }
@@ -74,6 +80,8 @@ export default function TaskModal() {
         description,
         dueDate: dueDate || null,
         priority,
+        isCompleted,
+        is_completed: isCompleted,
         labels: selectedLabels,
         assignees: selectedAssignees,
       },
@@ -82,7 +90,7 @@ export default function TaskModal() {
     emitEvent("task:updated", {
       boardId: selectedTask.boardId,
       listId: selectedTask.listId,
-      task: { id: selectedTask.id, title, description, priority },
+      task: { id: selectedTask.id, title, description, priority, isCompleted },
     });
 
     closeTaskModal();
@@ -152,6 +160,28 @@ export default function TaskModal() {
               </button>
             ))}
           </div>
+          <div style={{ flex: 1 }}></div>
+          {/* Completion Toggle */}
+          <button
+            className={`task-modal__complete-btn ${isCompleted ? "task-modal__complete-btn--active" : ""}`}
+            onClick={() => setIsCompleted(!isCompleted)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginRight: 16,
+              padding: "6px 12px",
+              borderRadius: 6,
+              border: "1px solid #ccc",
+              cursor: "pointer",
+              background: isCompleted ? "#e6f4ea" : "transparent",
+              borderColor: isCompleted ? "#1e8e3e" : "#ccc",
+              color: isCompleted ? "#1e8e3e" : "inherit",
+            }}
+          >
+            {isCompleted ? "Completed" : "Mark Complete"}
+          </button>
+
           <button className="task-modal__close" onClick={closeTaskModal}>
             <X size={20} />
           </button>
