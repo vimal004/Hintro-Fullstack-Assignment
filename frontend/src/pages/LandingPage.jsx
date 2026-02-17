@@ -246,15 +246,14 @@ export default function LandingPage() {
       <section className="landing__cta">
         <h2 className="landing__cta-title">Ready to get organized?</h2>
         <p className="landing__cta-desc">
-          Start managing your projects better today. Free, no credit card
-          needed.
+          Start managing your projects better today.
         </p>
         <div className="landing__cta-actions">
           <Link
             to="/signup"
             className="landing__btn landing__btn--primary-large"
           >
-            Get started for free
+            Get started!
             <ArrowRight size={16} />
           </Link>
         </div>
