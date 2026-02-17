@@ -45,6 +45,10 @@ app.use("/api/users", userRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/notifications", notificationRoutes);
 
+app.get("/", (_req, res) => {
+  res.send("This is the backend API for Hintro Fullstack Assignment.");
+});
+
 // ── Health check ──
 app.get("/api/health", (_req, res) =>
   res.json({ status: "ok", timestamp: new Date().toISOString() }),
