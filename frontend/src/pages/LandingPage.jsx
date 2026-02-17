@@ -56,7 +56,7 @@ export default function LandingPage() {
             Sign in
           </Link>
           <Link to="/signup" className="landing__btn landing__btn--primary">
-            Get started for free
+            Get started!
           </Link>
         </div>
       </nav>
