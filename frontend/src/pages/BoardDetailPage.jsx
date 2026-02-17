@@ -166,13 +166,6 @@ export default function BoardDetailPage() {
           <div className="board-detail__divider" />
           <AvatarGroup users={memberUsers} max={4} size="sm" />
           <Button
-            variant="ghost"
-            icon={Copy}
-            size="sm"
-            onClick={handleDuplicate}
-            title="Duplicate Board"
-          />
-          <Button
             variant={showActivity ? "secondary" : "ghost"}
             icon={Activity}
             size="sm"
